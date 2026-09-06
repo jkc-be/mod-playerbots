@@ -4,12 +4,17 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
-#include "SimulationClock.h"
 #include "MovementActions.h"
+
+#include <cmath>
+#include <cstdlib>
+#include <iomanip>
+#include <string>
+
 #include "Corpse.h"
 #include "Event.h"
 #include "FleeManager.h"
+#include "G3D/Vector3.h"
 #include "GameObject.h"
 #include "LastMovementValue.h"
 #include "LootObjectStack.h"
@@ -19,6 +24,7 @@
 #include "MovementGenerator.h"
 #include "ObjectDefines.h"
 #include "ObjectGuid.h"
+#include "Observatory.h"
 #include "PathGenerator.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
@@ -28,6 +34,7 @@
 #include "Random.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "SpellAuraEffects.h"
 #include "SpellInfo.h"
 #include "Stances.h"
@@ -35,11 +42,6 @@
 #include "Unit.h"
 #include "Vehicle.h"
 #include "WaypointMovementGenerator.h"
-#include "G3D/Vector3.h"
-#include <cmath>
-#include <cstdlib>
-#include <iomanip>
-#include <string>
 
 MovementAction::MovementAction(PlayerbotAI* botAI, std::string const name) : Action(botAI, name)
 {
@@ -1100,8 +1102,8 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 
     /*
     if (!bot->InBattleground()
-        && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot, target->GetPositionX(),
-    target->GetPositionY()), sPlayerbotAIConfig.sightDistance)
+        && ServerFacade::instance().IsDistanceLessOrEqualThan(ServerFacade::instance().GetDistance2d(bot,
+    target->GetPositionX(), target->GetPositionY()), sPlayerbotAIConfig.sightDistance)
         && abs(bot->GetPositionZ() - target->GetPositionZ()) >= sPlayerbotAIConfig.spellDistance &&
     botAI->HasGameClientMaster()
         && (target->GetMapId() && bot->GetMapId() != target->GetMapId()))

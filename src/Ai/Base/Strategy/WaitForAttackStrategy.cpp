@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "WaitForAttackStrategy.h"
+
 #include "Action.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Strategy.h"
 
 void WaitForAttackStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)

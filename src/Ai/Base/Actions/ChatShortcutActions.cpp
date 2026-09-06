@@ -4,10 +4,11 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
 #include "ChatShortcutActions.h"
+
 #include "Event.h"
 #include "Formations.h"
+#include "Observatory.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "PositionValue.h"

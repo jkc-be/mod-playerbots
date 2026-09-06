@@ -4,18 +4,19 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
-#include "SimulationClock.h"
 #include "SSCActions.h"
+
 #include "AiFactory.h"
 #include "Corpse.h"
 #include "EncounterHelpers.h"
 #include "LootAction.h"
 #include "LootObjectStack.h"
 #include "ObjectAccessor.h"
+#include "Observatory.h"
 #include "Playerbots.h"
 #include "RtiTargetValue.h"
 #include "SSCHelpers.h"
+#include "SimulationClock.h"
 
 using namespace SerpentShrineCavernHelpers;
 using namespace EncounterHelpers;
@@ -1459,8 +1460,8 @@ bool FathomLordKarathressAssignDpsPriorityAction::Execute(Event /*event*/)
 bool FathomLordKarathressManageDpsTimerAction::Execute(Event /*event*/)
 {
     Unit* karathress = AI_VALUE2(Unit*, "find target", "fathom-lord karathress");
-    if (karathress && karathressDpsWaitTimer.try_emplace(
-        karathress->GetMap()->GetInstanceId(), SimulationClock::Time()).second)
+    if (karathress &&
+        karathressDpsWaitTimer.try_emplace(karathress->GetMap()->GetInstanceId(), SimulationClock::Time()).second)
         return true;
 
     return false;

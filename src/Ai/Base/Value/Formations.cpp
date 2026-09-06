@@ -4,13 +4,14 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "Formations.h"
+
 #include "Arrow.h"
 #include "Event.h"
 #include "Map.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 WorldLocation Formation::NullLocation = WorldLocation();
 

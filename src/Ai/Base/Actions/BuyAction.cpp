@@ -4,13 +4,14 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
 #include "BuyAction.h"
+
 #include "BudgetValues.h"
 #include "Event.h"
 #include "ItemCountValue.h"
 #include "ItemUsageValue.h"
 #include "ItemVisitors.h"
+#include "Observatory.h"
 #include "Playerbots.h"
 #include "StatsWeightCalculator.h"
 
@@ -232,14 +233,12 @@ bool BuyAction::BuyItem(VendorItemData const* tItems, ObjectGuid vendorguid, Ite
 
         uint32 botMoney = bot->GetMoney();
         if (botAI->HasCheat(BotCheatMask::gold))
-            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-                bot->SetMoney(10000000));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(10000000));
 
         bot->BuyItemFromVendorSlot(vendorguid, slot, itemId, 1, NULL_BAG, NULL_SLOT);
 
         if (botAI->HasCheat(BotCheatMask::gold))
-            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-                bot->SetMoney(botMoney));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(botMoney));
 
         uint32 newCount = bot->GetItemCount(itemId, false);
         if (newCount > oldCount)

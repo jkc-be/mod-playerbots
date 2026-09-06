@@ -4,8 +4,10 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "RpgAction.h"
+
+#include <random>
+
 #include "ChatHelper.h"
 #include "EmoteAction.h"
 #include "Event.h"
@@ -13,7 +15,7 @@
 #include "Playerbots.h"
 #include "RpgSubActions.h"
 #include "ServerFacade.h"
-#include <random>
+#include "SimulationClock.h"
 
 bool RpgAction::Execute(Event /*event*/)
 {

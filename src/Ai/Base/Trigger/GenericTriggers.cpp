@@ -4,8 +4,10 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "GenericTriggers.h"
+
+#include <string>
+
 #include "Corpse.h"
 #include "CreatureAI.h"
 #include "GenericBuffUtils.h"
@@ -18,10 +20,10 @@
 #include "Playerbots.h"
 #include "PositionValue.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "TemporarySummon.h"
 #include "ThreatManager.h"
 #include "Timer.h"
-#include <string>
 
 bool LowManaTrigger::IsActive()
 {

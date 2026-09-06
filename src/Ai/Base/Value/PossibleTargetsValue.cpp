@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "PossibleTargetsValue.h"
+
 #include "AreaDefines.h"
 #include "AttackersValue.h"
 #include "CellImpl.h"
@@ -14,6 +14,7 @@
 #include "GridNotifiersImpl.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "SpellAuraDefines.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"

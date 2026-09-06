@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "SSCHelpers.h"
+
 #include "AiFactory.h"
 #include "Creature.h"
 #include "ObjectAccessor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 namespace SerpentShrineCavernHelpers
 {

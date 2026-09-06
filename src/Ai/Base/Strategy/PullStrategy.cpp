@@ -13,13 +13,14 @@
  *   David Parra Ausina (Flekz) <davidparraausina@gmail.com>
  */
 
-#include "SimulationClock.h"
 #include "PullStrategy.h"
+
 #include "AiObjectContext.h"
 #include "PassiveMultiplier.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "SpellMgr.h"
 
 class PullStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>

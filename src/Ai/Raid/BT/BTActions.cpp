@@ -4,13 +4,15 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "BTActions.h"
+
+#include <vector>
+
 #include "BTHelpers.h"
 #include "CreatureAI.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
-#include <vector>
+#include "SimulationClock.h"
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;
@@ -481,8 +483,7 @@ bool SupremusManagePhaseTimerAction::Execute(Event /*event*/)
     if (!supremus)
         return false;
 
-    supremusPhaseTimer.try_emplace(
-        supremus->GetMap()->GetInstanceId(), SimulationClock::Time());
+    supremusPhaseTimer.try_emplace(supremus->GetMap()->GetInstanceId(), SimulationClock::Time());
 
     return false;
 }
@@ -1742,8 +1743,7 @@ bool IllidariCouncilManageDpsTimerAction::Execute(Event /*event*/)
 {
     if (Unit* gathios = AI_VALUE2(Unit*, "find target", "gathios the shatterer"))
     {
-        return councilDpsWaitTimer.try_emplace(
-            gathios->GetMap()->GetInstanceId(), SimulationClock::Time()).second;
+        return councilDpsWaitTimer.try_emplace(gathios->GetMap()->GetInstanceId(), SimulationClock::Time()).second;
     }
 
     return false;

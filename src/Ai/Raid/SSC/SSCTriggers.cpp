@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "SSCTriggers.h"
+
 #include "AiFactory.h"
 #include "Corpse.h"
 #include "EncounterHelpers.h"
@@ -14,6 +14,7 @@
 #include "Playerbots.h"
 #include "SSCActions.h"
 #include "SSCHelpers.h"
+#include "SimulationClock.h"
 
 using namespace SerpentShrineCavernHelpers;
 using namespace EncounterHelpers;

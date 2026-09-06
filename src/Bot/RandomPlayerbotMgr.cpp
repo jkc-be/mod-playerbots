@@ -4,9 +4,15 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
-#include "Observatory.h"
 #include "RandomPlayerbotMgr.h"
+
+#include <algorithm>
+#include <boost/thread/thread.hpp>
+#include <cstdlib>
+#include <ctime>
+#include <iomanip>
+#include <random>
+
 #include "AiFactory.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
@@ -25,6 +31,7 @@
 #include "NewRpgInfo.h"
 #include "NewRpgStrategy.h"
 #include "ObjectGuid.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
@@ -38,16 +45,11 @@
 #include "RandomPlayerbotFactory.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "TravelMgr.h"
 #include "Unit.h"
 #include "World.h"
 #include "WorldSessionMgr.h"
-#include <algorithm>
-#include <boost/thread/thread.hpp>
-#include <cstdlib>
-#include <ctime>
-#include <iomanip>
-#include <random>
 
 struct GuidClassRaceInfo
 {
@@ -353,7 +355,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
             }
 
             if (RealPlayerLastTimeSeen != 0 && onlineBotCount > 0 &&
-                SimulationClock::Time() > RealPlayerLastTimeSeen + sPlayerbotAIConfig.disabledWithoutRealPlayerLogoutDelay)
+                SimulationClock::Time() >
+                    RealPlayerLastTimeSeen + sPlayerbotAIConfig.disabledWithoutRealPlayerLogoutDelay)
             {
                 LogoutAllBots();
                 LOG_INFO("playerbots", "Logout all bots due no real player session.");
@@ -738,8 +741,7 @@ uint32 RandomPlayerbotMgr::AddRandomBots()
         auto tryLoginBot = [&](CharacterInfo const& charInfo) -> bool
         {
             if (!Observatory::AllowsBot(charInfo.guid) || GetEventValue(charInfo.guid, "add") ||
-                GetEventValue(charInfo.guid, "logout") ||
-                GetPlayerBot(charInfo.guid) ||
+                GetEventValue(charInfo.guid, "logout") || GetPlayerBot(charInfo.guid) ||
                 currentBots.contains(charInfo.guid) ||
                 (sPlayerbotAIConfig.disableDeathKnightLogin && charInfo.rClass == CLASS_DEATH_KNIGHT))
             {
@@ -2083,8 +2085,7 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
 
     if (bot->isDead())
     {
-        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
-            bot->ResurrectPlayer(1.0f));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(1.0f));
         bot->SpawnCorpseBones();
         botAI->ResetStrategies(false);
     }
@@ -2109,15 +2110,15 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
 
     if (bot->GetMaxPower(POWER_MANA) > 0)
         (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
-            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
+         bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
 
     if (bot->GetMaxPower(POWER_ENERGY) > 0)
         (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
-            bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY)));
+         bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY)));
 
     uint32 money = bot->GetMoney();
     (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-        bot->SetMoney(money + 500 * sqrt(urand(1, bot->GetLevel() * 5))));
+     bot->SetMoney(money + 500 * sqrt(urand(1, bot->GetLevel() * 5))));
 
     if (bot->GetGroup())
         botAI->LeaveOrDisbandGroup();

@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "BattleGroundJoinAction.h"
+
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
 #include "BattlegroundMgr.h"
@@ -14,6 +14,7 @@
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
+#include "SimulationClock.h"
 
 bool BGJoinAction::Execute(Event /*event*/)
 {

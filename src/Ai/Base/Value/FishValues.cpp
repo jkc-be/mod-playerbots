@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "FishValues.h"
+
 #include "FishingAction.h"
 #include "Map.h"
 #include "PlayerbotAI.h"
 #include "RandomPlayerbotMgr.h"
+#include "SimulationClock.h"
 #include "Spell.h"
 
 bool CanFishValue::Calculate()

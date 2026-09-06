@@ -4,8 +4,11 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
 #include "PlayerbotFactory.h"
+
+#include <array>
+#include <utility>
+
 #include "AccountMgr.h"
 #include "AiFactory.h"
 #include "AiObjectContext.h"
@@ -22,6 +25,7 @@
 #include "Log.h"
 #include "LootMgr.h"
 #include "ObjectMgr.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "PetDefines.h"
 #include "Player.h"
@@ -37,11 +41,6 @@
 #include "SharedDefines.h"
 #include "StatsWeightCalculator.h"
 #include "World.h"
-#include <array>
-#include <utility>
-
-#include <array>
-#include <utility>
 
 const uint64 diveMask = (1LL << 7) | (1LL << 44) | (1LL << 37) | (1LL << 38) | (1LL << 26) | (1LL << 30) | (1LL << 27) |
                         (1LL << 33) | (1LL << 24) | (1LL << 34);
@@ -582,17 +581,14 @@ uint8 PlayerbotFactory::GetPreferredArmorType(uint8 cls)
 void PlayerbotFactory::Prepare()
 {
     if (bot->isDead())
-        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
-            bot->ResurrectPlayer(1.0f, false));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(1.0f, false));
 
     bot->CombatStop(true);
     uint32 currentLevel = bot->GetLevel();
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-        bot->GiveLevel(level));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"), bot->GiveLevel(level));
     if (level != currentLevel)
     {
-        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
-            bot->SetUInt32Value(PLAYER_XP, 0));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"), bot->SetUInt32Value(PLAYER_XP, 0));
     }
 
     if (sPlayerbotAIConfig.randomBotShowHelmet == ShowHideCosmetic::ALWAYS_SHOW ||
@@ -653,8 +649,7 @@ void PlayerbotFactory::Randomize(bool incremental)
     bot->RemoveAllSpellCooldown();
     UnbindInstance();
 
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-        bot->GiveLevel(level));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"), bot->GiveLevel(level));
     bot->InitStatsForLevel(true);
     CancelAuras();
     // bot->SaveToDB(false, false);
@@ -875,11 +870,10 @@ void PlayerbotFactory::Randomize(bool incremental)
     pmo = sPerfMonitor.start(PERF_MON_RNDBOT, "PlayerbotFactory_Save");
     LOG_DEBUG("playerbots", "Saving to DB...");
     (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-        bot->SetMoney(urand(level * 100000, level * 5 * 100000)));
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetHealth"),
-        bot->SetHealth(bot->GetMaxHealth()));
+     bot->SetMoney(urand(level * 100000, level * 5 * 100000)));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetHealth"), bot->SetHealth(bot->GetMaxHealth()));
     (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
-        bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
+     bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
     bot->SaveToDB(false, false);
     LOG_DEBUG("playerbots", "Initialization Done.");
     if (pmo)
@@ -921,12 +915,10 @@ void PlayerbotFactory::Refresh()
         ApplyEnchantAndGemsNew();
     bot->DurabilityRepairAll(false, 1.0f, false);
     if (bot->isDead())
-        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
-            bot->ResurrectPlayer(1.0f, false));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(1.0f, false));
     uint32 money = urand(level * 1000, level * 5 * 1000);
     if (bot->GetMoney() < money)
-        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-            bot->SetMoney(money));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(money));
     // bot->SaveToDB(false, false);
 }
 
@@ -1452,10 +1444,9 @@ void PlayerbotFactory::ClearSkills()
 void PlayerbotFactory::ClearEverything()
 {
     (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-        bot->GiveLevel(bot->getClass() == CLASS_DEATH_KNIGHT ? sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_LEVEL)
-                                                         : sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL)));
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
-        bot->SetUInt32Value(PLAYER_XP, 0));
+     bot->GiveLevel(bot->getClass() == CLASS_DEATH_KNIGHT ? sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_LEVEL)
+                                                          : sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL)));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"), bot->SetUInt32Value(PLAYER_XP, 0));
     LOG_INFO("playerbots", "Resetting player...");
     bot->resetTalents(true);
     ClearSkills();
@@ -3634,12 +3625,10 @@ void PlayerbotFactory::InitInstanceQuests()
     InitQuests(specialQuestIds, false);
 
     // quest rewards boost bot level, so reduce back
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-        bot->GiveLevel(level));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"), bot->GiveLevel(level));
 
     ClearInventory();
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
-        bot->SetUInt32Value(PLAYER_XP, currentXP));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"), bot->SetUInt32Value(PLAYER_XP, currentXP));
 }
 
 void PlayerbotFactory::ClearInventory()
@@ -5391,8 +5380,6 @@ void PlayerbotFactory::InitAttunementQuests()
     }
 
     // Reset XP so bot's level remains unchanged
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-        bot->GiveLevel(level));
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
-        bot->SetUInt32Value(PLAYER_XP, currentXP));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"), bot->GiveLevel(level));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"), bot->SetUInt32Value(PLAYER_XP, currentXP));
 }

@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "UldBossHelper.h"
+
 #include "GameObject.h"
 #include "Group.h"
 #include "ObjectAccessor.h"
@@ -13,6 +13,7 @@
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "ScriptedCreature.h"
+#include "SimulationClock.h"
 #include "World.h"
 
 const Position ULDUAR_THORIM_NEAR_ARENA_CENTER = Position(2134.9854f, -263.11853f, 419.8465f);

@@ -4,8 +4,11 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "BTMultipliers.h"
+
+#include <array>
+#include <ctime>
+
 #include "BTActions.h"
 #include "BTHelpers.h"
 #include "ChooseTargetActions.h"
@@ -18,9 +21,8 @@
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "WipeAction.h"
-#include <array>
-#include <ctime>
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;

@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "StayActions.h"
+
 #include "Event.h"
 #include "LastMovementValue.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
+#include "SimulationClock.h"
 
 bool StayActionBase::Stay()
 {

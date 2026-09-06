@@ -4,8 +4,17 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "PlayerbotMgr.h"
+
+#include <openssl/sha.h>
+
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <iomanip>
+#include <string>
+#include <unordered_set>
+
 #include "BroadcastHelper.h"
 #include "ChannelMgr.h"
 #include "CharacterCache.h"
@@ -29,15 +38,9 @@
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "WorldSession.h"
 #include "WorldSessionMgr.h"
-#include <algorithm>
-#include <cstdio>
-#include <cstring>
-#include <iomanip>
-#include <openssl/sha.h>
-#include <string>
-#include <unordered_set>
 
 class BotInitGuard
 {
@@ -378,26 +381,25 @@ void PlayerbotHolder::LogoutPlayerBot(ObjectGuid guid)
 
         // TODO: Review whether or not to implement timed logout.
         // Unused block. Useful only for timed logout.
-/*
-        // check for instant logout
-        bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
+        /*
+                // check for instant logout
+                bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
 
-        if (masterWorldSessionPtr && masterWorldSessionPtr->ShouldLogOut(SimulationClock::Time()))
-            logout = true;
+                if (masterWorldSessionPtr && masterWorldSessionPtr->ShouldLogOut(SimulationClock::Time()))
+                    logout = true;
 
-        if (masterWorldSessionPtr && !masterWorldSessionPtr->GetPlayer())
-            logout = true;
+                if (masterWorldSessionPtr && !masterWorldSessionPtr->GetPlayer())
+                    logout = true;
 
-        if (bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || bot->HasUnitState(UNIT_STATE_IN_FLIGHT) ||
-            botWorldSessionPtr->GetSecurity() >= (AccountTypes)sWorld->getIntConfig(CONFIG_INSTANT_LOGOUT))
-            logout = true;
+                if (bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || bot->HasUnitState(UNIT_STATE_IN_FLIGHT) ||
+                    botWorldSessionPtr->GetSecurity() >= (AccountTypes)sWorld->getIntConfig(CONFIG_INSTANT_LOGOUT))
+                    logout = true;
 
-        if (master &&
-            (master->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || master->HasUnitState(UNIT_STATE_IN_FLIGHT) ||
-             (masterWorldSessionPtr &&
-              masterWorldSessionPtr->GetSecurity() >= (AccountTypes)sWorld->getIntConfig(CONFIG_INSTANT_LOGOUT))))
-            logout = true;
-*/
+                if (master &&
+                    (master->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_RESTING) || master->HasUnitState(UNIT_STATE_IN_FLIGHT)
+           || (masterWorldSessionPtr && masterWorldSessionPtr->GetSecurity() >=
+           (AccountTypes)sWorld->getIntConfig(CONFIG_INSTANT_LOGOUT)))) logout = true;
+        */
         // Instant logout (the only option right now)
         {
             std::string message = PlayerbotTextMgr::instance().GetBotTextOrDefault(

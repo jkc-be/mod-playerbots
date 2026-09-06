@@ -13,13 +13,14 @@
  *   Cyberium <cyberium@users.noreply.github.com>
  */
 
-#include "SimulationClock.h"
 #include "PullTriggers.h"
+
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
 #include "PullStrategy.h"
+#include "SimulationClock.h"
 
 bool PullStartTrigger::IsActive()
 {

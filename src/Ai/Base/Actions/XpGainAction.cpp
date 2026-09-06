@@ -4,11 +4,12 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
 #include "XpGainAction.h"
+
 #include "BroadcastHelper.h"
 #include "Event.h"
 #include "GuildMgr.h"
+#include "Observatory.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 
@@ -89,14 +90,12 @@ void XpGainAction::GiveXP(uint32 xp, Unit* victim)
 
         if (level < sWorld->getIntConfig(CONFIG_MAX_PLAYER_LEVEL))
         {
-            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
-                bot->GiveLevel(level + 1));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"), bot->GiveLevel(level + 1));
         }
 
         level = bot->GetLevel();
         nextLvlXP = bot->GetUInt32Value(PLAYER_NEXT_LEVEL_XP);
     }
 
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
-        bot->SetUInt32Value(PLAYER_XP, newXP));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"), bot->SetUInt32Value(PLAYER_XP, newXP));
 }

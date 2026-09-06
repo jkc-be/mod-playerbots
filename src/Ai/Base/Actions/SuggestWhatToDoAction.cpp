@@ -4,8 +4,10 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "SuggestWhatToDoAction.h"
+
+#include <functional>
+
 #include "AiFactory.h"
 #include "BroadcastHelper.h"
 #include "Channel.h"
@@ -14,7 +16,7 @@
 #include "ItemVisitors.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
-#include <functional>
+#include "SimulationClock.h"
 
 enum eTalkType
 {

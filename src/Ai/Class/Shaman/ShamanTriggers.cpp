@@ -4,17 +4,19 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ShamanTriggers.h"
+
+#include <ctime>
+
 #include "Creature.h"
 #include "InstanceScript.h"
 #include "ItemTemplate.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "TotemsShamanStrategy.h"
 #include "Unit.h"
-#include <ctime>
 
 bool MainHandWeaponNoImbueTrigger::IsActive()
 {

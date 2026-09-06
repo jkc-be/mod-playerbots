@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "TKMultipliers.h"
+
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
 #include "DruidActions.h"
@@ -18,6 +18,7 @@
 #include "Playerbots.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "TKActions.h"
 #include "TKHelpers.h"
 #include "TKKaelthasBossAI.h"

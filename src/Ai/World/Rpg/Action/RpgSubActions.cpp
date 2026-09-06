@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
 #include "RpgSubActions.h"
+
 #include "BudgetValues.h"
 #include "ChooseRpgTargetAction.h"
 #include "EmoteAction.h"
@@ -14,6 +14,7 @@
 #include "GuildCreateActions.h"
 #include "LastMovementValue.h"
 #include "MovementActions.h"
+#include "Observatory.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "PossibleRpgTargetsValue.h"
@@ -178,8 +179,7 @@ bool RpgTaxiAction::Execute(Event /*event*/)
 
     uint32 path = nodes[urand(0, nodes.size() - 1)];
     uint32 money = bot->GetMoney();
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-        bot->SetMoney(money + 100000));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(money + 100000));
 
     TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(path);
     if (!entry)
@@ -205,8 +205,7 @@ bool RpgTaxiAction::Execute(Event /*event*/)
     LOG_INFO("playerbots", "Bot {} <{}> is flying from {} to {} ({} location available)",
              bot->GetGUID().ToString().c_str(), bot->GetName(), nodeFrom->name[0], nodeTo->name[0], nodes.size());
 
-    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
-        bot->SetMoney(money));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(money));
 
     rpg->AfterExecute();
 

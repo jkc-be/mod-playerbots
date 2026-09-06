@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "LootAction.h"
+
 #include "BroadcastHelper.h"
 #include "ChatHelper.h"
 #include "Event.h"
@@ -17,6 +17,7 @@
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 bool LootAction::Execute(Event /*event*/)
 {

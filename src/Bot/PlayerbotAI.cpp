@@ -4,9 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
-#include "SimulationClock.h"
 #include "PlayerbotAI.h"
+
+#include <cmath>
+#include <mutex>
+#include <sstream>
+#include <string>
+
 #include "AiFactory.h"
 #include "BudgetValues.h"
 #include "ChannelMgr.h"
@@ -34,6 +38,7 @@
 #include "NewRpgStrategy.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "Player.h"
 #include "PlayerbotAIConfig.h"
@@ -48,6 +53,7 @@
 #include "ScriptMgr.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "SocialMgr.h"
 #include "SpellAuraEffects.h"
 #include "SpellInfo.h"
@@ -55,10 +61,6 @@
 #include "Unit.h"
 #include "UpdateTime.h"
 #include "Vehicle.h"
-#include <cmath>
-#include <mutex>
-#include <sstream>
-#include <string>
 
 namespace
 {
@@ -268,11 +270,11 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 
         if (HasCheat(BotCheatMask::mana) && bot->getPowerType() == POWER_MANA)
             (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
-                bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
+             bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
 
         if (HasCheat(BotCheatMask::power) && bot->getPowerType() != POWER_MANA)
             (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
-                bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType())));
+             bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType())));
     }
 
     AllowActivity();
@@ -1281,10 +1283,12 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
                         }
                     }
 
-                    QueueChatResponse(ChatQueuedReply{msgtype, guid1.GetCounter(), guid2.GetCounter(), message,
-                                                      chanName, name,
-                                                      SimulationClock::Time() + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
-                    GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 25));
+                    QueueChatResponse(
+                        ChatQueuedReply{msgtype, guid1.GetCounter(), guid2.GetCounter(), message, chanName, name,
+                                        SimulationClock::Time() + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
+                    GetAiObjectContext()
+                        ->GetValue<time_t>("last said", "chat")
+                        ->Set(SimulationClock::Time() + urand(5, 25));
                     return;
                 }
             }
@@ -3836,7 +3840,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
     // WaitForSpellCast(spell);
 
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), SimulationClock::Time());
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")
+        ->Get()
+        .Set(spellId, target->GetGUID(), SimulationClock::Time());
 
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
@@ -3971,7 +3977,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     }
 
     // WaitForSpellCast(spell);
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, bot->GetGUID(), SimulationClock::Time());
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")
+        ->Get()
+        .Set(spellId, bot->GetGUID(), SimulationClock::Time());
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
     if (oldSel)
@@ -4193,8 +4201,8 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
 
     // WaitForSpellCast(spell);
 
-    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), SimulationClock::Time());
-    // aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
+    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(),
+    // SimulationClock::Time()); aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
 
     if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
     {
@@ -4566,9 +4574,8 @@ bool PlayerbotAI::HasPlayerNearby(WorldPosition* pos, float range)
     {
         for (Player const* observer : bot->GetSharedVisionList())
         {
-            if (observer && observer->IsInWorld() && observer->IsGMSpectator() &&
-                observer->GetViewpoint() == bot && observer->GetSession() &&
-                !observer->GetSession()->IsSocketClosed())
+            if (observer && observer->IsInWorld() && observer->IsGMSpectator() && observer->GetViewpoint() == bot &&
+                observer->GetSession() && !observer->GetSession()->IsSocketClosed())
                 return true;
         }
     }
@@ -4616,9 +4623,8 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
     // Shared vision is removed when the observer switches targets or stops watching.
     for (Player const* observer : bot->GetSharedVisionList())
     {
-        if (observer && observer->IsInWorld() && observer->IsGMSpectator() &&
-            observer->GetViewpoint() == bot && observer->GetSession() &&
-            !observer->GetSession()->IsSocketClosed())
+        if (observer && observer->IsInWorld() && observer->IsGMSpectator() && observer->GetViewpoint() == bot &&
+            observer->GetSession() && !observer->GetSession()->IsSocketClosed())
             return true;
     }
 

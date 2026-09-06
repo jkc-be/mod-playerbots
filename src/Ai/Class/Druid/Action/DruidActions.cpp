@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "DruidActions.h"
+
 #include "AoeValues.h"
 #include "Event.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 #include "TargetValue.h"
 
 constexpr uint32 SPELL_ECLIPSE_SOLAR = 48517;

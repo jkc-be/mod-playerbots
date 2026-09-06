@@ -4,10 +4,11 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ZATriggers.h"
+
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "ZAActions.h"
 #include "ZAHelpers.h"
 

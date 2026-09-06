@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "GuildTaskMgr.h"
+
 #include "ChatHelper.h"
 #include "Group.h"
 #include "GuildMgr.h"
@@ -15,6 +15,7 @@
 #include "Playerbots.h"
 #include "RandomItemMgr.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 char* strstri(char const* str1, char const* str2);
 

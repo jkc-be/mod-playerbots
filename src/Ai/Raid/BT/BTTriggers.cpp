@@ -4,14 +4,15 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "BTTriggers.h"
+
 #include "AiFactory.h"
 #include "BTActions.h"
 #include "BTHelpers.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;

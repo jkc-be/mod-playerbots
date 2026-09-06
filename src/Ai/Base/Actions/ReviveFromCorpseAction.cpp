@@ -4,18 +4,19 @@
  * or (at your option) any later version.
  */
 
-#include "Observatory.h"
-#include "SimulationClock.h"
 #include "ReviveFromCorpseAction.h"
+
 #include "Corpse.h"
 #include "Event.h"
 #include "FleeManager.h"
 #include "GameGraveyard.h"
 #include "MapMgr.h"
+#include "Observatory.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 bool ReviveFromCorpseAction::Execute(Event event)
 {
@@ -319,8 +320,7 @@ bool SpiritHealerAction::Execute(Event /*event*/)
                 LOG_DEBUG("playerbots", "Bot {} {}:{} <{}> revives at spirit healer", bot->GetGUID().ToString().c_str(),
                           bot->GetTeamId() == TEAM_ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
                 PlayerbotChatHandler ch(bot);
-                (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
-                    bot->ResurrectPlayer(0.5f));
+                (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(0.5f));
                 bot->SpawnCorpseBones();
                 context->GetValue<Unit*>("current target")->Set(nullptr);
                 bot->SetTarget();

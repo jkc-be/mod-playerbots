@@ -4,8 +4,12 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "PlayerbotAIConfig.h"
+
+#include <cctype>
+#include <iostream>
+#include <sstream>
+
 #include "BisListMgr.h"
 #include "Config.h"
 #include "NewRpgInfo.h"
@@ -16,11 +20,9 @@
 #include "RandomItemMgr.h"
 #include "RandomPlayerbotFactory.h"
 #include "RandomPlayerbotMgr.h"
+#include "SimulationClock.h"
 #include "Talentspec.h"
 #include "TravelMgr.h"
-#include <cctype>
-#include <iostream>
-#include <sstream>
 
 template <class T>
 void LoadList(std::string const value, T& list)

@@ -4,8 +4,10 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ChooseRpgTargetAction.h"
+
+#include <random>
+
 #include "BudgetValues.h"
 #include "ChatHelper.h"
 #include "Event.h"
@@ -15,7 +17,7 @@
 #include "PossibleRpgTargetsValue.h"
 #include "RpgSubActions.h"
 #include "ServerFacade.h"
-#include <random>
+#include "SimulationClock.h"
 
 bool ChooseRpgTargetAction::HasSameTarget(ObjectGuid guid, uint32 max, GuidVector const& nearGuids)
 {

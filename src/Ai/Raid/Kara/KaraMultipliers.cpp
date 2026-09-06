@@ -4,8 +4,10 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "KaraMultipliers.h"
+
+#include <ctime>
+
 #include "AttackAction.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -22,8 +24,8 @@
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "WarriorActions.h"
-#include <ctime>
 
 using namespace KaraHelpers;
 

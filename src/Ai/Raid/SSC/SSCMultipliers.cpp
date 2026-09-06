@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "SSCMultipliers.h"
+
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
 #include "DestroyItemAction.h"
@@ -25,6 +25,7 @@
 #include "SSCActions.h"
 #include "SSCHelpers.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "WarlockActions.h"
 #include "WarriorActions.h"
 #include "WipeAction.h"

@@ -5,9 +5,12 @@
  */
 
 #include "PlayerbotWorldThreadProcessor.h"
-#include "Log.h"
-#include "Timer.h"
+
 #include <algorithm>
+
+#include "Log.h"
+#include "Observatory.h"
+#include "Timer.h"
 
 void PlayerbotWorldThreadProcessor::Update(uint32 diff)
 {
@@ -43,6 +46,7 @@ bool PlayerbotWorldThreadProcessor::QueueOperation(std::unique_ptr<PlayerbotOper
     // Check if queue is full
     if (m_operationQueue.size() >= m_maxQueueSize)
     {
+        Observatory::Fail("bot_operation_queue_overflow");
         LOG_ERROR("playerbots",
                   "PlayerbotWorldThreadProcessor queue is full ({} operations). Dropping operation: {}",
                   m_maxQueueSize, operation->GetName());

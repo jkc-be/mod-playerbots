@@ -4,12 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "KaraActions.h"
-#include "EncounterHelpers.h"
-#include "KaraHelpers.h"
-#include "PlayerbotTextMgr.h"
-#include "Playerbots.h"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -18,6 +14,12 @@
 #include <list>
 #include <map>
 #include <string>
+
+#include "EncounterHelpers.h"
+#include "KaraHelpers.h"
+#include "PlayerbotTextMgr.h"
+#include "Playerbots.h"
+#include "SimulationClock.h"
 
 using namespace KaraHelpers;
 using namespace EncounterHelpers;

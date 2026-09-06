@@ -4,14 +4,15 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "MagActions.h"
+
 #include "Creature.h"
 #include "EncounterHelpers.h"
 #include "MagHelpers.h"
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 using namespace MagtheridonHelpers;
 using namespace EncounterHelpers;
@@ -366,8 +367,7 @@ bool MagtheridonSpreadRangedAction::Execute(Event /*event*/)
     if (IsCubeClicker(bot))
     {
         auto timerIt = blastNovaTimer.find(magtheridon->GetMap()->GetInstanceId());
-        if (timerIt != blastNovaTimer.end() &&
-            SimulationClock::Time() - timerIt->second >= BLAST_NOVA_INTERIM_SECONDS)
+        if (timerIt != blastNovaTimer.end() && SimulationClock::Time() - timerIt->second >= BLAST_NOVA_INTERIM_SECONDS)
         {
             return false;
         }
@@ -454,8 +454,7 @@ bool MagtheridonUseManticronCubeAction::HandleCubeRelease(Unit* magtheridon)
 bool MagtheridonUseManticronCubeAction::HandleWaitingPhase(CubeInfo const& cubeInfo)
 {
     auto timerIt = blastNovaTimer.find(bot->GetMap()->GetInstanceId());
-    if (timerIt == blastNovaTimer.end() ||
-        SimulationClock::Time() - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
+    if (timerIt == blastNovaTimer.end() || SimulationClock::Time() - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
     {
         return false;
     }

@@ -7,13 +7,15 @@
 #ifndef PLAYERBOTS_VALUE_H
 #define PLAYERBOTS_VALUE_H
 
-#include "SimulationClock.h"
+#include <time.h>
+
+#include <unordered_map>
+
 #include "AiObject.h"
 #include "ObjectGuid.h"
+#include "SimulationClock.h"
 #include "Timer.h"
 #include "Unit.h"
-#include <time.h>
-#include <unordered_map>
 
 class PlayerbotAI;
 class Unit;
@@ -152,7 +154,10 @@ public:
     }
 
     virtual bool EqualToLast(T value) = 0;
-    virtual bool CanCheckChange() { return SimulationClock::Time() - lastChangeTime < minChangeInterval || EqualToLast(this->value); }
+    virtual bool CanCheckChange()
+    {
+        return SimulationClock::Time() - lastChangeTime < minChangeInterval || EqualToLast(this->value);
+    }
 
     virtual bool UpdateChange()
     {

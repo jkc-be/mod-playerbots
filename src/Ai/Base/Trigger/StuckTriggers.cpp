@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "StuckTriggers.h"
+
 #include "CellImpl.h"
 #include "MapCollisionData.h"
 #include "PathGenerator.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 bool MoveStuckTrigger::IsActive()
 {

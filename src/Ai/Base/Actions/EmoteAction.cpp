@@ -4,11 +4,12 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "EmoteAction.h"
+
 #include "Event.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 std::map<std::string, uint32> EmoteActionBase::emotes;
 std::map<std::string, uint32> EmoteActionBase::textEmotes;

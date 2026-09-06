@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ICCTriggers.h"
+
 #include "GenericTriggers.h"
 #include "GridNotifiers.h"
 #include "ICCActions.h"
@@ -14,6 +14,7 @@
 #include "ObjectAccessor.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Trigger.h"
 #include "Vehicle.h"
 

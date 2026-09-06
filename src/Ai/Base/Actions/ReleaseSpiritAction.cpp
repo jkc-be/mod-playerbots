@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ReleaseSpiritAction.h"
+
 #include "Corpse.h"
 #include "Event.h"
 #include "GameGraveyard.h"
@@ -16,6 +16,7 @@
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 // ReleaseSpiritAction implementation
 bool ReleaseSpiritAction::Execute(Event event)

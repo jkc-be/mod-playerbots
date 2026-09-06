@@ -4,14 +4,16 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "SayAction.h"
+
+#include <regex>
+#include <string>
+
 #include "AiFactory.h"
 #include "Event.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
-#include <regex>
-#include <string>
+#include "SimulationClock.h"
 
 static const std::unordered_set<std::string> noReplyMsgs = {
     "join",
@@ -244,7 +246,10 @@ bool ChatReplyAction::HandleThunderfuryReply(Player* bot, ChatChannelSource chat
             break;
     }
 
-    GET_PLAYERBOT_AI(bot)->GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 25));
+    GET_PLAYERBOT_AI(bot)
+        ->GetAiObjectContext()
+        ->GetValue<time_t>("last said", "chat")
+        ->Set(SimulationClock::Time() + urand(5, 25));
     return true;
 }
 
@@ -310,7 +315,10 @@ bool ChatReplyAction::HandleToxicLinksReply(Player* bot, ChatChannelSource chatC
             break;
     }
 
-    GET_PLAYERBOT_AI(bot)->GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 60));
+    GET_PLAYERBOT_AI(bot)
+        ->GetAiObjectContext()
+        ->GetValue<time_t>("last said", "chat")
+        ->Set(SimulationClock::Time() + urand(5, 60));
 
     return true;
 }
@@ -404,7 +412,10 @@ bool ChatReplyAction::HandleWTBItemsReply(Player* bot, ChatChannelSource chatCha
             default:
             break;
         }
-        GET_PLAYERBOT_AI(bot)->GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 60));
+        GET_PLAYERBOT_AI(bot)
+            ->GetAiObjectContext()
+            ->GetValue<time_t>("last said", "chat")
+            ->Set(SimulationClock::Time() + urand(5, 60));
     }
 
     return true;
@@ -490,7 +501,10 @@ bool ChatReplyAction::HandleLFGQuestsReply(Player* bot, ChatChannelSource chatCh
             default:
             break;
         }
-        GET_PLAYERBOT_AI(bot)->GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 25));
+        GET_PLAYERBOT_AI(bot)
+            ->GetAiObjectContext()
+            ->GetValue<time_t>("last said", "chat")
+            ->Set(SimulationClock::Time() + urand(5, 25));
     }
 
     return true;
@@ -566,7 +580,10 @@ bool ChatReplyAction::SendGeneralResponse(Player* bot, ChatChannelSource chatCha
         default:
             break;
     }
-    GET_PLAYERBOT_AI(bot)->GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 25));
+    GET_PLAYERBOT_AI(bot)
+        ->GetAiObjectContext()
+        ->GetValue<time_t>("last said", "chat")
+        ->Set(SimulationClock::Time() + urand(5, 25));
 
     return true;
 }

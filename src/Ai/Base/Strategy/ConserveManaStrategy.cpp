@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "ConserveManaStrategy.h"
+
 #include "GenericSpellActions.h"
 #include "LastSpellCastValue.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 // float ConserveManaMultiplier::GetValue(Action* action)
 // {

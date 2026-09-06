@@ -7,8 +7,8 @@
 #ifndef PLAYERBOTS_LASTSAIDVALUE_H
 #define PLAYERBOTS_LASTSAIDVALUE_H
 
-#include "SimulationClock.h"
 #include "NamedObjectContext.h"
+#include "SimulationClock.h"
 #include "Value.h"
 
 class PlayerbotAI;

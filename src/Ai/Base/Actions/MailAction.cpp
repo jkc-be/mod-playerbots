@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "MailAction.h"
+
 #include "ChatHelper.h"
 #include "Event.h"
 #include "Mail.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 std::map<std::string, MailProcessor*> MailAction::processors;
 

@@ -4,15 +4,16 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
-#include "Observatory.h"
 #include "Engine.h"
+
 #include "Action.h"
 #include "ArenaSpectator.h"
 #include "Event.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "Playerbots.h"
 #include "Queue.h"
+#include "SimulationClock.h"
 #include "Strategy.h"
 #include "Timer.h"
 #include "WorldSession.h"
@@ -153,7 +154,7 @@ bool Engine::DoNextAction(Unit* /*unit*/, uint32 /*depth*/, bool minimal)
 
     bool actionExecuted = false;
     ActionBasket* basket = nullptr;
-    time_t currentTime = SimulationClock::Time();
+    time_t currentTime = time(nullptr);
 
     if (!minimal)
         botAI->forceRebuff.RollBuffPendingCycle();
@@ -247,7 +248,7 @@ bool Engine::DoNextAction(Unit* /*unit*/, uint32 /*depth*/, bool minimal)
         delete actionNode;  // Always delete after processing the action node
     }
 
-    if (SimulationClock::Time() - currentTime > 1)
+    if (time(nullptr) - currentTime > 1)
     {
         LogAction("Execution time exceeded 1 second");
     }
@@ -589,8 +590,8 @@ bool Engine::ListenAndExecute(Action* action, Event event)
     Observatory::Context observationContext(action->getName());
     if (actionExecutionListeners.Before(action, event))
     {
-        actionExecuted = actionExecutionListeners.AllowExecution(action, event) ?
-            (performed = action->Execute(event)) : true;
+        actionExecuted =
+            actionExecutionListeners.AllowExecution(action, event) ? (performed = action->Execute(event)) : true;
     }
 
     if (botAI->HasStrategy("debug", BOT_STATE_NON_COMBAT))
@@ -620,9 +621,8 @@ bool Engine::ListenAndExecute(Action* action, Event event)
         Player* bot = botAI->GetBot();
         for (Player* observer : bot->GetSharedVisionList())
         {
-            if (!observer || !observer->IsInWorld() || !observer->IsGMSpectator() ||
-                observer->GetViewpoint() != bot || !observer->GetSession() ||
-                observer->GetSession()->IsSocketClosed())
+            if (!observer || !observer->IsInWorld() || !observer->IsGMSpectator() || observer->GetViewpoint() != bot ||
+                !observer->GetSession() || observer->GetSession()->IsSocketClosed())
                 continue;
 
             std::string name = action->getName().substr(0, 120);

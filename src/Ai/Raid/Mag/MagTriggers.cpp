@@ -4,11 +4,12 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "MagTriggers.h"
+
 #include "EncounterHelpers.h"
 #include "MagHelpers.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 using namespace MagtheridonHelpers;
 using namespace EncounterHelpers;

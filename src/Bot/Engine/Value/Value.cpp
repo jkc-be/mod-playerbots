@@ -4,10 +4,11 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "Value.h"
+
 #include "PerfMonitor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Timer.h"
 
 UnitCalculatedValue::UnitCalculatedValue(PlayerbotAI* botAI, std::string const name, int32 checkInterval)

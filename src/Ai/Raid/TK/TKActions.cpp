@@ -4,8 +4,8 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "TKActions.h"
+
 #include "AiFactory.h"
 #include "EncounterHelpers.h"
 #include "EquipAction.h"
@@ -13,6 +13,7 @@
 #include "LootObjectStack.h"
 #include "ObjectAccessor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "TKHelpers.h"
 #include "TKKaelthasBossAI.h"
 

@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "KaraTriggers.h"
+
 #include "EncounterHelpers.h"
 #include "KaraActions.h"
 #include "KaraHelpers.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 using namespace KaraHelpers;
 using namespace EncounterHelpers;

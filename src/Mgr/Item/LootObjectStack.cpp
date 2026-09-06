@@ -4,12 +4,13 @@
  * or (at your option) any later version.
  */
 
-#include "SimulationClock.h"
 #include "LootObjectStack.h"
+
 #include "LootMgr.h"
 #include "Object.h"
 #include "ObjectAccessor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Unit.h"
 
 #define MAX_LOOT_OBJECT_COUNT 200
