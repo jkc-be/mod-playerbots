@@ -14,6 +14,7 @@
 #include "ItemUsageValue.h"
 #include "LootObjectStack.h"
 #include "LootStrategyValue.h"
+#include "Observatory.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
@@ -359,6 +360,10 @@ bool StoreLootAction::Execute(Event event)
     uint8 loot_type;
     uint32 gold = 0;
     uint8 items = 0;
+    bool inventoryBlocked = false;
+    bool queuedItem = false;
+    bool const manageJunk = sPlayerbotAIConfig.autoDestroyJunk && sRandomPlayerbotMgr.IsRandomBot(bot) &&
+                            !botAI->HasGameClientMaster() && !IsSelfBot(bot);
 
     p.rpos(0);
     p >> guid;       // 8 corpse guid
@@ -404,7 +409,16 @@ bool StoreLootAction::Execute(Event event)
         if (!proto)
             continue;
 
-        if (!IsRealPlayer(botAI->GetMaster()) && AI_VALUE(uint8, "bag space") > 80)
+        if (manageJunk)
+        {
+            ItemPosCountVec destinations;
+            if (bot->CanStoreNewItem(NULL_BAG, NULL_SLOT, destinations, itemid, itemcount) != EQUIP_ERR_OK)
+            {
+                inventoryBlocked = true;
+                continue;
+            }
+        }
+        else if (!IsRealPlayer(botAI->GetMaster()) && AI_VALUE(uint8, "bag space") > 80)
         {
             uint32 maxStack = proto->GetMaxStackSize();
             if (maxStack == 1)
@@ -443,6 +457,7 @@ bool StoreLootAction::Execute(Event event)
         WorldPacket* packet = new WorldPacket(CMSG_AUTOSTORE_LOOT_ITEM, 1);
         *packet << itemindex;
         bot->GetSession()->QueuePacket(packet);
+        queuedItem = true;
         // bot->GetSession()->HandleAutostoreLootItemOpcode(packet);
         botAI->SetNextCheckDelay(sPlayerbotAIConfig.lootDelay);
 
@@ -457,12 +472,18 @@ bool StoreLootAction::Execute(Event event)
 
     AI_VALUE(LootObjectStack*, "available loot")->Remove(guid);
 
+    if (inventoryBlocked)
+    {
+        AI_VALUE(LootObjectStack*, "available loot")->Defer(guid);
+        Observatory::Event(bot, "loot_inventory_blocked", 0, guid.ToString());
+    }
+
     // release loot
     WorldPacket* packet = new WorldPacket(CMSG_LOOT_RELEASE, 8);
     *packet << guid;
     bot->GetSession()->QueuePacket(packet);
     // bot->GetSession()->HandleLootReleaseOpcode(packet);
-    return true;
+    return !inventoryBlocked || queuedItem || gold > 0;
 }
 
 bool StoreLootAction::IsLootAllowed(uint32 itemid, PlayerbotAI* botAI)

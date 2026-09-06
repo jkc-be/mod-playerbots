@@ -9,6 +9,7 @@
 
 void LootNonCombatStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    triggers.push_back(new TriggerNode("often", { NextAction("destroy junk", 9.0f) }));
     triggers.push_back(new TriggerNode("loot available", { NextAction("loot", 6.0f) }));
     triggers.push_back(
         new TriggerNode("far from loot target", { NextAction("move to loot", 7.0f) }));

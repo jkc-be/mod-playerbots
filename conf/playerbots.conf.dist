@@ -303,6 +303,12 @@ AiPlayerbot.TwoRoundsGearInit = 0
 # Default: 0 (disabled)
 AiPlayerbot.FreeMethodLoot = 0
 
+# Autonomous random bots may discard one unneeded grey-quality stack when bags are over 80% full.
+# Cheapest stacks go first. Equipped/banked items, upgrades, quest items and useful supplies are preserved.
+# Also backs off from loot sources whose remaining items cannot fit in the inventory.
+# Player-controlled bots are excluded. Default: 0 (disabled).
+AiPlayerbot.AutoDestroyJunk = 0
+
 # Bots' Roll level bots will use for items they Need (0 = pass, 1 = greed, 2 = need)
 # Default: 1 (greed)
 AiPlayerbot.LootNeedRollLevel = 1
