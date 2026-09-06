@@ -1495,6 +1495,9 @@ bool RandomPlayerbotMgr::ProcessBot(Player* bot)
     // if death revive
     if (bot->isDead())
     {
+        if (sPlayerbotAIConfig.originalTravel)
+            return false;
+
         if (!GetEventValue(botId, "dead"))
         {
             uint32 randomTime =
@@ -1584,6 +1587,14 @@ bool RandomPlayerbotMgr::ProcessBot(Player* bot)
         uint32 teleport = GetEventValue(botId, "teleport");
         if (!teleport)
         {
+            if (sPlayerbotAIConfig.originalTravel)
+            {
+                uint32 time = urand(sPlayerbotAIConfig.minRandomBotTeleportInterval,
+                                    sPlayerbotAIConfig.maxRandomBotTeleportInterval);
+                ScheduleTeleport(botId, time);
+                return false;
+            }
+
             LOG_DEBUG("playerbots", "Bot #{} <{}>: teleport for level and refresh", botId, bot->GetName());
             Refresh(bot);
             RandomTeleportForLevel(bot);
@@ -1606,7 +1617,8 @@ void RandomPlayerbotMgr::Revive(Player* player)
     SetEventValue(bot, "revive", 0, 0);
 
     Refresh(player);
-    RandomTeleportGrindForLevel(player);
+    if (!sPlayerbotAIConfig.originalTravel)
+        RandomTeleportGrindForLevel(player);
 }
 
 void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation>& locs, bool hearth)
@@ -1721,7 +1733,7 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot, std::vector<WorldLocation>&
                   zone->area_name[locale], area->ID, area->area_name[locale], zone->area_level, area->area_level, x, y,
                   z, i + 1, tlocs.size());
 
-        if (hearth)
+        if (hearth && !sPlayerbotAIConfig.originalTravel)
         {
             bot->SetHomebind(loc, zone->ID);
         }

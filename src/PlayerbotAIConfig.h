@@ -392,6 +392,7 @@ public:
     bool autoLearnTrainerSpells;
     bool autoDoQuests;
     bool enableNewRpgStrategy;
+    bool originalTravel;
     std::unordered_map<NewRpgStatus, uint32> RpgStatusProbWeight;
     bool syncLevelWithPlayers;
     bool autoLearnQuestSpells;
