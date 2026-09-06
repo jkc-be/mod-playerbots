@@ -115,7 +115,7 @@ void PlayerbotWorldThreadProcessor::ProcessBatch()
             // Execute the operation
             bool success = operation->Execute();
 
-            uint32 executionTime = GetMSTimeDiffToNow(startTime);
+            uint32 executionTime = GetRealMSTimeDiffToNow(startTime);
             totalExecutionTime += executionTime;
 
             // Log slow operations
