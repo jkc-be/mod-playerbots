@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "BTMultipliers.h"
 #include "BTActions.h"
 #include "BTHelpers.h"
@@ -410,7 +411,7 @@ float IllidariCouncilWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<IllidariCouncilMisdirectBossesToTanksAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 5;
 
     auto it = councilDpsWaitTimer.find(gathios->GetMap()->GetInstanceId());
@@ -614,7 +615,7 @@ float IllidanStormrageWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<IllidanStormrageMisdirectToTankAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const uint32 instanceId = illidan->GetMap()->GetInstanceId();
 
     int phase = GetIllidanPhase(illidan);

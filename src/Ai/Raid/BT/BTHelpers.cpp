@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "BTHelpers.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
@@ -91,7 +92,7 @@ int GetGurtoggActiveRotationGroup(Unit* gurtogg)
     if (it == gurtoggPhaseTimer.end())
         return -1;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const time_t elapsed = now - it->second;
     const int groupIndex = (elapsed % 30) / 10; // 3 groups, swapping every 10 seconds
 

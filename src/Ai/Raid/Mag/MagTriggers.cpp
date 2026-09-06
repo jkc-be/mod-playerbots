@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "MagTriggers.h"
 #include "EncounterHelpers.h"
 #include "MagHelpers.h"
@@ -93,7 +94,7 @@ bool MagtheridonBossEngagedByRangedTrigger::IsActive()
 
     constexpr uint8 dpsWaitSeconds = 6;
     auto it = dpsWaitTimer.find(magtheridon->GetMap()->GetInstanceId());
-    if (it == dpsWaitTimer.end() || (time(nullptr) - it->second) < dpsWaitSeconds)
+    if (it == dpsWaitTimer.end() || (SimulationClock::Time() - it->second) < dpsWaitSeconds)
         return false;
 
     return magtheridon->GetVictim() != bot;

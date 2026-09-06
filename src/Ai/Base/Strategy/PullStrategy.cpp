@@ -13,6 +13,7 @@
  *   David Parra Ausina (Flekz) <davidparraausina@gmail.com>
  */
 
+#include "SimulationClock.h"
 #include "PullStrategy.h"
 #include "AiObjectContext.h"
 #include "PassiveMultiplier.h"
@@ -159,7 +160,7 @@ void PullStrategy::RequestPull(Unit* target, bool resetTime)
     SetTarget(target);
     pendingToStart = true;
     if (resetTime)
-        pullStartTime = time(nullptr);
+        pullStartTime = SimulationClock::Time();
 }
 
 void PullStrategy::OnPullStarted() { pendingToStart = false; }

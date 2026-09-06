@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "ZAMultipliers.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -49,7 +50,7 @@ float AkilzonStayInEyeOfTheStormMultiplier::GetValue(Action* action)
 
     auto it = akilzonStormTimer.find(bot->GetMap()->GetInstanceId());
     if (it == akilzonStormTimer.end() ||
-        !IsInStormWindow(it->second, std::time(nullptr)))
+        !IsInStormWindow(it->second, SimulationClock::Time()))
         return 1.0f;
 
     if (dynamic_cast<CastReachTargetSpellAction*>(action) ||

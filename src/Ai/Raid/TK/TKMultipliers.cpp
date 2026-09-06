@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "TKMultipliers.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -190,7 +191,7 @@ float KaelthasSunstriderWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<KaelthasSunstriderMisdirectAdvisorsToTanksAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 10;
 
     auto it = advisorDpsWaitTimer.find(kaelthas->GetMap()->GetInstanceId());

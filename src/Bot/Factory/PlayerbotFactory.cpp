@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
 #include "PlayerbotFactory.h"
 #include "AccountMgr.h"
 #include "AiFactory.h"
@@ -581,14 +582,17 @@ uint8 PlayerbotFactory::GetPreferredArmorType(uint8 cls)
 void PlayerbotFactory::Prepare()
 {
     if (bot->isDead())
-        bot->ResurrectPlayer(1.0f, false);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
+            bot->ResurrectPlayer(1.0f, false));
 
     bot->CombatStop(true);
     uint32 currentLevel = bot->GetLevel();
-    bot->GiveLevel(level);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
+        bot->GiveLevel(level));
     if (level != currentLevel)
     {
-        bot->SetUInt32Value(PLAYER_XP, 0);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
+            bot->SetUInt32Value(PLAYER_XP, 0));
     }
 
     if (sPlayerbotAIConfig.randomBotShowHelmet == ShowHideCosmetic::ALWAYS_SHOW ||
@@ -614,6 +618,8 @@ void PlayerbotFactory::Prepare()
 
 void PlayerbotFactory::Randomize(bool incremental)
 {
+    Observatory::Context observationContext("factory:Randomize");
+    Observatory::Event(bot, "shortcut", 0, "factory:Randomize");
     // if (sPlayerbotAIConfig.disableRandomLevels)
     //     return;
 
@@ -647,7 +653,8 @@ void PlayerbotFactory::Randomize(bool incremental)
     bot->RemoveAllSpellCooldown();
     UnbindInstance();
 
-    bot->GiveLevel(level);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
+        bot->GiveLevel(level));
     bot->InitStatsForLevel(true);
     CancelAuras();
     // bot->SaveToDB(false, false);
@@ -867,9 +874,12 @@ void PlayerbotFactory::Randomize(bool incremental)
 
     pmo = sPerfMonitor.start(PERF_MON_RNDBOT, "PlayerbotFactory_Save");
     LOG_DEBUG("playerbots", "Saving to DB...");
-    bot->SetMoney(urand(level * 100000, level * 5 * 100000));
-    bot->SetHealth(bot->GetMaxHealth());
-    bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+        bot->SetMoney(urand(level * 100000, level * 5 * 100000)));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetHealth"),
+        bot->SetHealth(bot->GetMaxHealth()));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+        bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
     bot->SaveToDB(false, false);
     LOG_DEBUG("playerbots", "Initialization Done.");
     if (pmo)
@@ -878,6 +888,8 @@ void PlayerbotFactory::Randomize(bool incremental)
 
 void PlayerbotFactory::Refresh()
 {
+    Observatory::Context observationContext("factory:Refresh");
+    Observatory::Event(bot, "shortcut", 0, "factory:Refresh");
     // Prepare();
     // if (!sPlayerbotAIConfig.equipAndSpecPersistence ||
     //     bot->GetLevel() < sPlayerbotAIConfig.equipAndSpecPersistenceLevel)
@@ -909,10 +921,12 @@ void PlayerbotFactory::Refresh()
         ApplyEnchantAndGemsNew();
     bot->DurabilityRepairAll(false, 1.0f, false);
     if (bot->isDead())
-        bot->ResurrectPlayer(1.0f, false);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
+            bot->ResurrectPlayer(1.0f, false));
     uint32 money = urand(level * 1000, level * 5 * 1000);
     if (bot->GetMoney() < money)
-        bot->SetMoney(money);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+            bot->SetMoney(money));
     // bot->SaveToDB(false, false);
 }
 
@@ -1437,9 +1451,11 @@ void PlayerbotFactory::ClearSkills()
 
 void PlayerbotFactory::ClearEverything()
 {
-    bot->GiveLevel(bot->getClass() == CLASS_DEATH_KNIGHT ? sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_LEVEL)
-                                                         : sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL));
-    bot->SetUInt32Value(PLAYER_XP, 0);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
+        bot->GiveLevel(bot->getClass() == CLASS_DEATH_KNIGHT ? sWorld->getIntConfig(CONFIG_START_HEROIC_PLAYER_LEVEL)
+                                                         : sWorld->getIntConfig(CONFIG_START_PLAYER_LEVEL)));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
+        bot->SetUInt32Value(PLAYER_XP, 0));
     LOG_INFO("playerbots", "Resetting player...");
     bot->resetTalents(true);
     ClearSkills();
@@ -1472,6 +1488,8 @@ void PlayerbotFactory::ClearSpells()
 
 void PlayerbotFactory::ResetQuests()
 {
+    Observatory::Context observationContext("factory:ResetQuests");
+    Observatory::Event(bot, "shortcut", 0, "factory:ResetQuests");
     for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
     {
         bot->SetQuestSlot(slot, 0);
@@ -2105,6 +2123,8 @@ void Shuffle(std::vector<uint32>& items)
 
 void PlayerbotFactory::InitEquipment(bool incremental, bool second_chance)
 {
+    Observatory::Context observationContext("factory:InitEquipment");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitEquipment");
     if (level < 5)
     {
         // original items
@@ -3042,6 +3062,8 @@ void PlayerbotFactory::UpdateTradeSkills()
 
 void PlayerbotFactory::InitSkills()
 {
+    Observatory::Context observationContext("factory:InitSkills");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitSkills");
     //uint32 maxValue = level * 5; //not used, line marked for removal.
     bot->UpdateSkillsForLevel();
 
@@ -3612,14 +3634,18 @@ void PlayerbotFactory::InitInstanceQuests()
     InitQuests(specialQuestIds, false);
 
     // quest rewards boost bot level, so reduce back
-    bot->GiveLevel(level);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
+        bot->GiveLevel(level));
 
     ClearInventory();
-    bot->SetUInt32Value(PLAYER_XP, currentXP);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
+        bot->SetUInt32Value(PLAYER_XP, currentXP));
 }
 
 void PlayerbotFactory::ClearInventory()
 {
+    Observatory::Context observationContext("factory:ClearInventory");
+    Observatory::Event(bot, "shortcut", 0, "factory:ClearInventory");
     DestroyItemsVisitor visitor(bot);
     IterateItems(&visitor);
 }
@@ -3681,6 +3707,8 @@ uint32 PlayerbotFactory::CalcMixedGearScore(uint32 gs, uint32 quality)
 
 void PlayerbotFactory::DestroyEquippedGear(Player* bot)
 {
+    Observatory::Context observationContext("factory:DestroyEquippedGear");
+    Observatory::Event(bot, "shortcut", 0, "factory:DestroyEquippedGear");
     for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; ++slot)
     {
         if (slot == EQUIPMENT_SLOT_TABARD || slot == EQUIPMENT_SLOT_BODY)
@@ -4527,6 +4555,8 @@ void PlayerbotFactory::CancelAuras() { bot->RemoveAllAuras(); }
 
 void PlayerbotFactory::InitInventory()
 {
+    Observatory::Context observationContext("factory:InitInventory");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitInventory");
     InitInventoryTrade();
     InitInventoryEquip();
     InitInventorySkill();
@@ -4534,6 +4564,8 @@ void PlayerbotFactory::InitInventory()
 
 void PlayerbotFactory::InitInventorySkill()
 {
+    Observatory::Context observationContext("factory:InitInventorySkill");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitInventorySkill");
     if (bot->HasSkill(SKILL_MINING) && !bot->HasItemCount(2901, 1, true))
         StoreItem(2901, 1);  // Mining Pick
 
@@ -4564,6 +4596,8 @@ Item* PlayerbotFactory::StoreItem(uint32 itemId, uint32 count)
 
 void PlayerbotFactory::InitInventoryTrade()
 {
+    Observatory::Context observationContext("factory:InitInventoryTrade");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitInventoryTrade");
     uint32 itemId = sRandomItemMgr.GetRandomTrade(level);
     if (!itemId)
     {
@@ -4597,6 +4631,8 @@ void PlayerbotFactory::InitInventoryTrade()
 
 void PlayerbotFactory::InitInventoryEquip()
 {
+    Observatory::Context observationContext("factory:InitInventoryEquip");
+    Observatory::Event(bot, "shortcut", 0, "factory:InitInventoryEquip");
     std::vector<uint32> ids;
 
     uint32 desiredQuality = itemQuality;
@@ -5181,6 +5217,8 @@ void PlayerbotFactory::IterateItemsInBags(IterateItemsVisitor* visitor)
 
 void PlayerbotFactory::IterateItemsInEquip(IterateItemsVisitor* visitor)
 {
+    Observatory::Context observationContext("factory:IterateItemsInEquip");
+    Observatory::Event(bot, "shortcut", 0, "factory:IterateItemsInEquip");
     for (uint8 slot = EQUIPMENT_SLOT_START; slot < EQUIPMENT_SLOT_END; slot++)
     {
         Item* const pItem = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
@@ -5353,6 +5391,8 @@ void PlayerbotFactory::InitAttunementQuests()
     }
 
     // Reset XP so bot's level remains unchanged
-    bot->GiveLevel(level);
-    bot->SetUInt32Value(PLAYER_XP, currentXP);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:GiveLevel"),
+        bot->GiveLevel(level));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetUInt32Value"),
+        bot->SetUInt32Value(PLAYER_XP, currentXP));
 }

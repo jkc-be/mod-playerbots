@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "Formations.h"
 #include "Arrow.h"
 #include "Event.h"
@@ -145,7 +146,7 @@ public:
         float range = sPlayerbotAIConfig.followDistance;
         float angle = GetFollowAngle();
 
-        time_t now = time(nullptr);
+        time_t now = SimulationClock::Time();
         if (!lastChangeTime || now - lastChangeTime >= 3)
         {
             lastChangeTime = now;

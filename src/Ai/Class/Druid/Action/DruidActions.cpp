@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "DruidActions.h"
 #include "AoeValues.h"
 #include "Event.h"
@@ -69,7 +70,7 @@ bool CastThornsOnMainTankAction::Execute(Event event)
 
 bool CastWrathAction::isUseful()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     time_t solarTime = context->GetValue<time_t>("eclipse solar proc time")->Get();
     time_t lunarTime = context->GetValue<time_t>("eclipse lunar proc time")->Get();
 
@@ -102,7 +103,7 @@ bool CastWrathAction::isUseful()
 
 bool CastStarfireAction::isUseful()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     time_t solarTime = context->GetValue<time_t>("eclipse solar proc time")->Get();
     time_t lunarTime = context->GetValue<time_t>("eclipse lunar proc time")->Get();
 

@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
 #include "ChatShortcutActions.h"
 #include "Event.h"
 #include "Formations.h"
@@ -98,7 +99,8 @@ bool FollowChatShortcutAction::Execute(Event /*event*/)
     {
         if (bot->isDead())
         {
-            bot->ResurrectPlayer(1.0f, false);
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
+                bot->ResurrectPlayer(1.0f, false));
             botAI->TellMasterNoFacing("Back from the grave!");
         }
         else

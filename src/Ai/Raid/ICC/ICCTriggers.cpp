@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "ICCTriggers.h"
 #include "GenericTriggers.h"
 #include "GridNotifiers.h"
@@ -285,11 +286,11 @@ bool IccRotfaceMoveAwayFromExplosionTrigger::IsActive()
     {
         _wasCasting = false;
         if (_castEndTime == 0)
-            _castEndTime = time(nullptr);
+            _castEndTime = SimulationClock::Time();
     }
 
     // Stay active for 6 seconds after cast ended (2s wait + return movement)
-    if (_castEndTime > 0 && time(nullptr) - _castEndTime < 6)
+    if (_castEndTime > 0 && SimulationClock::Time() - _castEndTime < 6)
         return true;
 
     _castEndTime = 0;

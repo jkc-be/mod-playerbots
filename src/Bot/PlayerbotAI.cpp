@@ -4,6 +4,8 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
+#include "SimulationClock.h"
 #include "PlayerbotAI.h"
 #include "AiFactory.h"
 #include "BudgetValues.h"
@@ -245,6 +247,7 @@ PlayerbotAI::~PlayerbotAI()
 
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 {
+    Observatory::Event(bot, "ai_update");
     // Handle the AI check delay
     if (nextAICheckDelay > elapsed)
         nextAICheckDelay -= elapsed;
@@ -261,13 +264,15 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         (static_cast<uint32>(GetCheat()) > 0 || static_cast<uint32>(sPlayerbotAIConfig.botCheatMask) > 0))
     {
         if (HasCheat(BotCheatMask::health))
-            bot->SetFullHealth();
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetFullHealth"), bot->SetFullHealth());
 
         if (HasCheat(BotCheatMask::mana) && bot->getPowerType() == POWER_MANA)
-            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+                bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
 
         if (HasCheat(BotCheatMask::power) && bot->getPowerType() != POWER_MANA)
-            bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType()));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+                bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType())));
     }
 
     AllowActivity();
@@ -494,7 +499,7 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
     for (auto it = chatReplies.begin(); it != chatReplies.end();)
     {
         time_t checkTime = it->m_time;
-        if (checkTime && time(0) < checkTime)
+        if (checkTime && SimulationClock::Time() < checkTime)
         {
             ++it;
             continue;
@@ -510,7 +515,7 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
     if (bot->GetSession()->isLogingOut())
     {
         WorldSession* botWorldSessionPtr = bot->GetSession();
-        bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
+        bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
         if (!master || !master->GetSession()->GetPlayer())
             logout = true;
 
@@ -565,7 +570,7 @@ void PlayerbotAI::HandleCommands()
     for (auto it = chatCommands.begin(); it != chatCommands.end();)
     {
         time_t& checkTime = it->GetTime();
-        if (checkTime && time(nullptr) < checkTime)
+        if (checkTime && SimulationClock::Time() < checkTime)
         {
             ++it;
             continue;
@@ -652,7 +657,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fr
         if (filtered.find(i->first) == 0)
         {
             filtered = filtered.substr(3);
-            currentChat = std::pair<ChatMsg, time_t>(i->second, time(0) + 2);
+            currentChat = std::pair<ChatMsg, time_t>(i->second, SimulationClock::Time() + 2);
             break;
         }
     }
@@ -717,7 +722,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fr
             }
         }
 
-        chatCommands.push_back(ChatCommandHolder(remaining, &fromPlayer, type, time(0) + index));
+        chatCommands.push_back(ChatCommandHolder(remaining, &fromPlayer, type, SimulationClock::Time() + index));
     }
     else if (filtered == "reset")
     {
@@ -857,7 +862,7 @@ void PlayerbotAI::Reset(bool full)
         return;
 
     WorldSession* botWorldSessionPtr = bot->GetSession();
-    bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
+    bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
 
     // cancel logout
     if (!logout && bot->GetSession()->isLogingOut())
@@ -994,7 +999,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
         if (filtered.find(i->first) == 0)
         {
             filtered = filtered.substr(3);
-            currentChat = std::pair<ChatMsg, time_t>(i->second, time(nullptr) + 2);
+            currentChat = std::pair<ChatMsg, time_t>(i->second, SimulationClock::Time() + 2);
             break;
         }
     }
@@ -1048,7 +1053,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
             }
         }
 
-        chatCommands.push_back(ChatCommandHolder(remaining, fromPlayer, type, time(nullptr) + index));
+        chatCommands.push_back(ChatCommandHolder(remaining, fromPlayer, type, SimulationClock::Time() + index));
     }
     else if (filtered == "reset")
     {
@@ -1223,7 +1228,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
                 if (guid1 != bot->GetGUID())
                 {
                     time_t lastChat = GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Get();
-                    bool isPaused = time(0) < lastChat;
+                    bool isPaused = SimulationClock::Time() < lastChat;
                     bool isFromFreeBot = false;
                     sCharacterCache->GetCharacterNameByGuid(guid1, name);
                     uint32 accountId = sCharacterCache->GetCharacterAccountIdByGuid(guid1);
@@ -1278,8 +1283,8 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
 
                     QueueChatResponse(ChatQueuedReply{msgtype, guid1.GetCounter(), guid2.GetCounter(), message,
                                                       chanName, name,
-                                                      time(nullptr) + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
-                    GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(time(0) + urand(5, 25));
+                                                      SimulationClock::Time() + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
+                    GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(SimulationClock::Time() + urand(5, 25));
                     return;
                 }
             }
@@ -1460,7 +1465,7 @@ void PlayerbotAI::ChangeEngine(BotState type)
 void PlayerbotAI::ChangeEngineOnCombat()
 {
     if (HasStrategy("wait for attack", BOT_STATE_COMBAT))
-        aiObjectContext->GetValue<time_t>("combat start time")->Set(time(nullptr));
+        aiObjectContext->GetValue<time_t>("combat start time")->Set(SimulationClock::Time());
 
     if (HasStrategy("stay", BOT_STATE_COMBAT))
     {
@@ -3026,12 +3031,12 @@ bool PlayerbotAI::TellMasterNoFacing(std::string const text, PlayerbotSecurityLe
 
     time_t lastSaid = whispers[text];
 
-    if (!lastSaid || (time(nullptr) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
+    if (!lastSaid || (SimulationClock::Time() - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
-        whispers[text] = time(nullptr);
+        whispers[text] = SimulationClock::Time();
 
         ChatMsg type = CHAT_MSG_WHISPER;
-        if (currentChat.second - time(nullptr) >= 1)
+        if (currentChat.second - SimulationClock::Time() >= 1)
             type = currentChat.first;
 
         WorldPacket data;
@@ -3566,7 +3571,7 @@ bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarg
     bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, itemTarget);
     if (result)
     {
-        aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(time(nullptr));
+        aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(SimulationClock::Time());
     }
 
     return result;
@@ -3831,7 +3836,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
     // WaitForSpellCast(spell);
 
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(nullptr));
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), SimulationClock::Time());
 
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
@@ -3966,7 +3971,7 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     }
 
     // WaitForSpellCast(spell);
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, bot->GetGUID(), time(nullptr));
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, bot->GetGUID(), SimulationClock::Time());
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
     if (oldSel)
@@ -4188,7 +4193,7 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
 
     // WaitForSpellCast(spell);
 
-    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(0));
+    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), SimulationClock::Time());
     // aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
 
     if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
@@ -4767,6 +4772,9 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
 
 bool PlayerbotAI::AllowActivity(ActivityType activityType, bool checkNow)
 {
+    if (SimulationClock::Enabled())
+        return true;
+
     const int activityIndex = static_cast<int>(activityType);
 
     if (!allowActiveCheckTimer[activityIndex])

@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
 #include "RepairAllAction.h"
 #include "ChatHelper.h"
 #include "Event.h"
@@ -27,7 +28,8 @@ bool RepairAllAction::Execute(Event /*event*/)
         uint32 botMoney = bot->GetMoney();
         if (botAI->HasCheat(BotCheatMask::gold))
         {
-            bot->SetMoney(10000000);
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+                bot->SetMoney(10000000));
         }
 
         // Repair weapons first.
@@ -39,7 +41,8 @@ bool RepairAllAction::Execute(Event /*event*/)
 
         if (botAI->HasCheat(BotCheatMask::gold))
         {
-            bot->SetMoney(botMoney);
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+                bot->SetMoney(botMoney));
         }
 
         if (totalCost > 0)

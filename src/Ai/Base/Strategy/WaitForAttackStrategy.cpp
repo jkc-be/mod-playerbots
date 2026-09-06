@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "WaitForAttackStrategy.h"
 #include "Action.h"
 #include "PlayerbotAI.h"
@@ -45,11 +46,11 @@ bool WaitForAttackStrategy::ShouldWait(PlayerbotAI* botAI)
             {
                 if (combatStartTime == 0)
                 {
-                    combatStartTime = time(nullptr);
+                    combatStartTime = SimulationClock::Time();
                     context->GetValue<time_t>("combat start time")->Set(combatStartTime);
                 }
 
-                return time(nullptr) - combatStartTime < GetWaitTime(botAI);
+                return SimulationClock::Time() - combatStartTime < GetWaitTime(botAI);
             }
         }
     }

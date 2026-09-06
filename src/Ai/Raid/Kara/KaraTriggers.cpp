@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "KaraTriggers.h"
 #include "EncounterHelpers.h"
 #include "KaraActions.h"
@@ -334,7 +335,7 @@ bool NightbaneBossIsFlyingTrigger::IsActive()
         return false;
 
     uint32 const instanceId = nightbane->GetMap()->GetInstanceId();
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     constexpr uint8 flightPhaseDurationSeconds = 35;
     // After 35s, Nightbane goes to land, and bots freely follow their master
     if (nightbaneFlightPhaseStartTimer.find(instanceId) == nightbaneFlightPhaseStartTimer.end())

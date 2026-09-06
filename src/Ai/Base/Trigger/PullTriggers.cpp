@@ -13,6 +13,7 @@
  *   Cyberium <cyberium@users.noreply.github.com>
  */
 
+#include "SimulationClock.h"
 #include "PullTriggers.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
@@ -37,7 +38,7 @@ bool PullEndTrigger::IsActive()
     if (!target || !target->IsInWorld() || !target->IsAlive())
         return true;
 
-    time_t const secondsSincePullStarted = time(nullptr) - strategy->GetPullStartTime();
+    time_t const secondsSincePullStarted = SimulationClock::Time() - strategy->GetPullStartTime();
     if (secondsSincePullStarted >= PullStrategy::GetMaxPullTime())
         return true;
 

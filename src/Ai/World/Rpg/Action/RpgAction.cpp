@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "RpgAction.h"
 #include "ChatHelper.h"
 #include "EmoteAction.h"
@@ -126,7 +127,7 @@ bool RpgAction::SetNextRpgAction()
         }
     }
 
-    std::mt19937 gen(time(0));
+    std::mt19937 gen(SimulationClock::Time());
 
     TravelMgr::instance().weighted_shuffle(actions.begin(), actions.end(), relevances.begin(), relevances.end(), gen);
 

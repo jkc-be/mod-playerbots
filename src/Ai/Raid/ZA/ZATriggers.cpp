@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "ZATriggers.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
@@ -50,7 +51,7 @@ bool AkilzonBossCastsStaticDisruptionTrigger::IsActive()
     if (it == akilzonStormTimer.end())
         return true;
 
-    return !IsInStormWindow(it->second, std::time(nullptr));
+    return !IsInStormWindow(it->second, SimulationClock::Time());
 }
 
 bool AkilzonElectricalStormIncomingTrigger::IsActive()
@@ -62,7 +63,7 @@ bool AkilzonElectricalStormIncomingTrigger::IsActive()
     if (it == akilzonStormTimer.end())
         return false;
 
-    return IsInStormWindow(it->second, std::time(nullptr));
+    return IsInStormWindow(it->second, SimulationClock::Time());
 }
 
 bool AkilzonBotsNeedToPrepareForElectricalStormTrigger::IsActive()

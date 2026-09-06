@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "PlayerbotAIConfig.h"
 #include "BisListMgr.h"
 #include "Config.h"
@@ -972,7 +973,7 @@ bool PlayerbotAIConfig::IsRestrictedHealerDPSMap(uint32 mapId) const
 
 std::string const PlayerbotAIConfig::GetTimestampStr()
 {
-    time_t t = time(nullptr);
+    time_t t = SimulationClock::Time();
     tm* aTm = localtime(&t);
     //       YYYY   year
     //       MM     month (2 digits 01-12)

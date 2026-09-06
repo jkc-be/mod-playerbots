@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "KaraActions.h"
 #include "EncounterHelpers.h"
 #include "KaraHelpers.h"
@@ -275,7 +276,7 @@ bool AttumenTheHuntsmanHandlePhaseTwoAction::StackBehindAttumen(Unit* attumen)
 bool AttumenTheHuntsmanSetDpsTimerAction::Execute(Event /*event*/)
 {
     uint32 const instanceId = bot->GetMap()->GetInstanceId();
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     return attumenDpsWaitTimer.try_emplace(instanceId, now).second;
 }
 
@@ -694,7 +695,7 @@ bool NetherspiteBlockRedBeamAction::Execute(Event /*event*/)
     {
         if (!_redBeamTimerWasSet)
         {
-            _redBeamMoveTimer = std::time(nullptr);
+            _redBeamMoveTimer = SimulationClock::Time();
             _redBeamTimerWasSet = true;
         }
     }
@@ -714,10 +715,10 @@ bool NetherspiteBlockRedBeamAction::Execute(Event /*event*/)
     _wasBlockingRedBeam = true;
 
     constexpr uint8 intervalSecs = 5;
-    if (_redBeamTimerWasSet && std::time(nullptr) - _redBeamMoveTimer >= intervalSecs)
+    if (_redBeamTimerWasSet && SimulationClock::Time() - _redBeamMoveTimer >= intervalSecs)
     {
         _lastBeamMoveSideways = !_lastBeamMoveSideways;
-        _redBeamMoveTimer = std::time(nullptr);
+        _redBeamMoveTimer = SimulationClock::Time();
     }
 
     Unit* netherspite = AI_VALUE2(Unit*, "find target", "netherspite");
@@ -1002,7 +1003,7 @@ bool NetherspiteManageTimersAndTrackersAction::Execute(Event /*event*/)
         return false;
 
     uint32 const instanceId = netherspite->GetMap()->GetInstanceId();
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     bool const isMechanicTracker = IsMechanicTrackerBot(bot, KARA_MAP_ID);
     bool didSomething = false;
 
@@ -1540,7 +1541,7 @@ bool NightbaneManageTimersAndTrackersAction::Execute(Event /*event*/)
         return false;
 
     uint32 const instanceId = nightbane->GetMap()->GetInstanceId();
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     bool const isMechanicTracker = IsMechanicTrackerBot(bot, KARA_MAP_ID);
     bool didSomething = false;
 

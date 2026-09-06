@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "StuckTriggers.h"
 #include "CellImpl.h"
 #include "MapCollisionData.h"
@@ -36,7 +37,7 @@ bool MoveStuckTrigger::IsActive()
 
     for (auto tPos : posVal->ValueLog())
     {
-        uint32 timePassed = time(0) - tPos.second;
+        uint32 timePassed = SimulationClock::Time() - tPos.second;
 
         if (timePassed > 10 * MINUTE)
         {
@@ -120,7 +121,7 @@ bool MoveLongStuckTrigger::IsActive()
 
     for (auto tPos : posVal->ValueLog())
     {
-        uint32 timePassed = time(0) - tPos.second;
+        uint32 timePassed = SimulationClock::Time() - tPos.second;
 
         if (timePassed > 15 * MINUTE)
         {

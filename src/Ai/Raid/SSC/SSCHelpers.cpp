@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "SSCHelpers.h"
 #include "AiFactory.h"
 #include "Creature.h"
@@ -470,7 +471,7 @@ bool AnyRecentCoreInInventory(PlayerbotAI* botAI, Player* bot)
     if (myIndex == -1)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 lookbackSeconds = 3;
 
     for (int8 i = 0; i <= myIndex; ++i)

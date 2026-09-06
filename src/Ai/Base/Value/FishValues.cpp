@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "FishValues.h"
 #include "FishingAction.h"
 #include "Map.h"
@@ -44,8 +45,8 @@ bool CanUseFishingBobberValue::Calculate()
 
             // Not ready yet → delay next check
             time_t bobberActiveTime = go->GetRespawnTime() - FISHING_BOBBER_READY_TIME;
-            if (bobberActiveTime > time(0))
-                botAI->SetNextCheckDelay((bobberActiveTime - time(0)) * IN_MILLISECONDS + 500);
+            if (bobberActiveTime > SimulationClock::Time())
+                botAI->SetNextCheckDelay((bobberActiveTime - SimulationClock::Time()) * IN_MILLISECONDS + 500);
             else
                 botAI->SetNextCheckDelay(1000);
 

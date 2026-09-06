@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "TKActions.h"
 #include "AiFactory.h"
 #include "EncounterHelpers.h"
@@ -1444,7 +1445,7 @@ bool KaelthasSunstriderManageAdvisorDpsTimerAction::Execute(Event /*event*/)
         if (advisor->GetHealth() == advisor->GetMaxHealth() &&
             !advisor->HasUnitFlag(UNIT_FLAG_NON_ATTACKABLE))
         {
-            const time_t now = std::time(nullptr);
+            const time_t now = SimulationClock::Time();
             advisorDpsWaitTimer.insert_or_assign(kaelthas->GetMap()->GetInstanceId(), now);
             return true;
         }

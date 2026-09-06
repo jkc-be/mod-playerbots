@@ -106,7 +106,7 @@ void PlayerbotWorldThreadProcessor::ProcessBatch()
             }
 
             // Time the execution
-            uint32 startTime = getMSTime();
+            uint32 startTime = getRealMSTime();
 
             // Execute the operation
             bool success = operation->Execute();

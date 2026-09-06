@@ -4,6 +4,8 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
+#include "SimulationClock.h"
 #include "MovementActions.h"
 #include "Corpse.h"
 #include "Event.h"
@@ -283,7 +285,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool /*idle
     // bool detailedMove = botAI->AllowActivity(DETAILED_MOVE_ACTIVITY);
     // if (!detailedMove)
     // {
-    //     time_t now = time(nullptr);
+    //     time_t now = SimulationClock::Time();
     //     if (AI_VALUE(LastMovement&, "last movement").nextTeleport > now) // We can not teleport yet. Wait.
     //     {
     //         LOG_DEBUG("playerbots", "AI_VALUE(LastMovement&, \"last movement\").nextTeleport > now");
@@ -660,7 +662,7 @@ bool MovementAction::MoveTo(uint32 mapId, float x, float y, float z, bool /*idle
     // if (totalDistance > maxDist && !detailedMove && !botAI->HasPlayerNearby(&movePosition)) // Why walk if you can
     // fly?
     // {
-    //     time_t now = time(nullptr);
+    //     time_t now = SimulationClock::Time();
 
     //     AI_VALUE(LastMovement&, "last movement").nextTeleport = now +
     //     (time_t)MoveDelay(startPosition.distance(movePosition)); LOG_DEBUG("playerbots", "totalDistance > maxDist &&
@@ -1135,7 +1137,8 @@ bool MovementAction::Follow(Unit* target, float distance, float angle)
 
         if (bot->isDead() && botAI->GetMaster()->IsAlive())
         {
-            bot->ResurrectPlayer(1.0f, false);
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
+                bot->ResurrectPlayer(1.0f, false));
             botAI->TellMasterNoFacing("I live, again!");
         }
         else
@@ -1353,7 +1356,7 @@ bool MovementAction::Flee(Unit* target)
 
     bool foundFlee = false;
     time_t lastFlee = AI_VALUE(LastMovement&, "last movement").lastFlee;
-    time_t now = time(0);
+    time_t now = SimulationClock::Time();
     uint32 fleeDelay = urand(2, sPlayerbotAIConfig.returnDelay / 1000);
 
     if (lastFlee)
@@ -1507,7 +1510,7 @@ bool MovementAction::Flee(Unit* target)
     bool result = MoveTo(target->GetMapId(), rx, ry, rz);
 
     if (result)
-        AI_VALUE(LastMovement&, "last movement").lastFlee = time(nullptr);
+        AI_VALUE(LastMovement&, "last movement").lastFlee = SimulationClock::Time();
 
     return result;
 }
@@ -1900,9 +1903,9 @@ bool AvoidAoeAction::AvoidAuraWithDynamicObj()
     name << spellInfo->SpellName[LOCALE_enUS];  // << "] (aura)";
     if (FleePosition(dynOwner->GetPosition(), radius))
     {
-        if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
+        if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < SimulationClock::Time() - 10)
         {
-            lastTellTimer = time(NULL);
+            lastTellTimer = SimulationClock::Time();
             lastMoveTimer = getMSTime();
             std::ostringstream out;
             out << "I'm avoiding " << name.str() << " (" << spellInfo->Id << ")" << " Radius " << radius << " - [Aura]";
@@ -1968,9 +1971,9 @@ bool AvoidAoeAction::AvoidGameObjectWithDamage()
         name << spellInfo->SpellName[LOCALE_enUS];  // << "] (object)";
         if (FleePosition(go->GetPosition(), radius))
         {
-            if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
+            if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < SimulationClock::Time() - 10)
             {
-                lastTellTimer = time(NULL);
+                lastTellTimer = SimulationClock::Time();
                 lastMoveTimer = getMSTime();
                 std::ostringstream out;
                 out << "I'm avoiding " << name.str() << " (" << spellInfo->Id << ")" << " Radius " << radius
@@ -2035,9 +2038,9 @@ bool AvoidAoeAction::AvoidUnitWithDamageAura()
                         name << triggerSpellInfo->SpellName[LOCALE_enUS];  //<< "] (unit)";
                         if (FleePosition(unit->GetPosition(), radius))
                         {
-                            if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < time(NULL) - 10)
+                            if (sPlayerbotAIConfig.tellWhenAvoidAoe && lastTellTimer < SimulationClock::Time() - 10)
                             {
-                                lastTellTimer = time(NULL);
+                                lastTellTimer = SimulationClock::Time();
                                 lastMoveTimer = getMSTime();
                                 std::ostringstream out;
                                 out << "I'm avoiding " << name.str() << " (" << triggerSpellInfo->Id << ")"

@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
 #include "UldActions.h"
 #include "AiObjectContext.h"
 #include "CombatStrategy.h"
@@ -2482,7 +2483,8 @@ bool VezaxCheatAction::Execute(Event /*event*/)
     // Restore bot's mana to full
     uint32 maxMana = bot->GetMaxPower(POWER_MANA);
     if (maxMana > 0)
-        bot->SetPower(POWER_MANA, maxMana);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+            bot->SetPower(POWER_MANA, maxMana));
 
     return true;
 }

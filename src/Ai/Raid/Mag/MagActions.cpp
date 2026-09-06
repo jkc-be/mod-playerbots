@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "MagActions.h"
 #include "Creature.h"
 #include "EncounterHelpers.h"
@@ -366,7 +367,7 @@ bool MagtheridonSpreadRangedAction::Execute(Event /*event*/)
     {
         auto timerIt = blastNovaTimer.find(magtheridon->GetMap()->GetInstanceId());
         if (timerIt != blastNovaTimer.end() &&
-            time(nullptr) - timerIt->second >= BLAST_NOVA_INTERIM_SECONDS)
+            SimulationClock::Time() - timerIt->second >= BLAST_NOVA_INTERIM_SECONDS)
         {
             return false;
         }
@@ -454,7 +455,7 @@ bool MagtheridonUseManticronCubeAction::HandleWaitingPhase(CubeInfo const& cubeI
 {
     auto timerIt = blastNovaTimer.find(bot->GetMap()->GetInstanceId());
     if (timerIt == blastNovaTimer.end() ||
-        time(nullptr) - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
+        SimulationClock::Time() - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
     {
         return false;
     }
@@ -587,7 +588,7 @@ bool MagtheridonManageTimersAndAssignmentsAction::Execute(Event /*event*/)
         return false;
 
     const uint32 instanceId = magtheridon->GetMap()->GetInstanceId();
-    const time_t now = time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     const bool blastNovaActive =
         magtheridon->HasUnitState(UNIT_STATE_CASTING) &&

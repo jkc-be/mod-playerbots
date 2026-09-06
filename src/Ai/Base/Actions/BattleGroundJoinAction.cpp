@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "BattleGroundJoinAction.h"
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
@@ -323,7 +324,7 @@ bool BGJoinAction::isUseful()
         return false;
 
     // do not try right after login (currently not working)
-    if ((time(nullptr) - bot->GetInGameTime()) < 120)
+    if ((SimulationClock::Time() - bot->GetInGameTime()) < 120)
         return false;
 
     // check level

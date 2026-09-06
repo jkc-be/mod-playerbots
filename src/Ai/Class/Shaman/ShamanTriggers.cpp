@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "ShamanTriggers.h"
 #include "Creature.h"
 #include "InstanceScript.h"
@@ -107,7 +108,7 @@ bool SpiritWalkTrigger::IsActive()
     constexpr uint32 SPIRIT_WALK_SPELL_ID = 58875u;
     constexpr int COOLDOWN_IN_SECONDS = 32;
 
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
 
     if ((now - lastSpiritWalkTime) < COOLDOWN_IN_SECONDS)
         return false;

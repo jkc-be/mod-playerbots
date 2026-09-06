@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "GenericTriggers.h"
 #include "Corpse.h"
 #include "CreatureAI.h"
@@ -395,7 +396,7 @@ bool HealerShouldAttackTrigger::IsActive()
     if (bot->GetAura(33891)) // Tree of Life
     {
         LastSpellCast& lastSpell = botAI->GetAiObjectContext()->GetValue<LastSpellCast&>("last spell cast")->Get();
-        if (lastSpell.timer + 5 > time(nullptr))
+        if (lastSpell.timer + 5 > SimulationClock::Time())
             return false;
     }
 
@@ -507,7 +508,7 @@ bool HasAuraStackTrigger::IsActive()
 
 bool TimerTrigger::IsActive()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
 
     if (now != lastCheck)
     {
@@ -520,7 +521,7 @@ bool TimerTrigger::IsActive()
 
 bool TimerBGTrigger::IsActive()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
 
     if (now - lastCheck >= 60)
     {
@@ -710,7 +711,7 @@ Value<Unit*>* SnareTargetTrigger::GetTargetValue() { return context->GetValue<Un
 bool StayTimeTrigger::IsActive()
 {
     time_t stayTime = AI_VALUE(time_t, "stay time");
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     return delay && stayTime && now > stayTime + 2 * delay / 1000;
 }
 

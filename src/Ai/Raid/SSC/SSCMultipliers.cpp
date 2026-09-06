@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "SSCMultipliers.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -87,7 +88,7 @@ float HydrossTheUnstableWaitForDpsMultiplier::GetValue(Action* action)
         return 1.0f;
 
     const uint32 instanceId = hydross->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 phaseChangeWaitSeconds = 1;
     constexpr uint8 dpsWaitSeconds = 5;
 
@@ -152,7 +153,7 @@ float TheLurkerBelowStayAwayFromSpoutMultiplier::GetValue(Action* action)
     if (!lurker)
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     auto it = lurkerSpoutTimer.find(lurker->GetMap()->GetInstanceId());
     if (it != lurkerSpoutTimer.end() && it->second > now)
@@ -325,7 +326,7 @@ float LeotherasTheBlindWaitForDpsMultiplier::GetValue(Action* action)
         return 1.0f;
 
     const uint32 instanceId = leotheras->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     constexpr uint8 dpsWaitSecondsPhase1 = 5;
     Unit* leotherasHuman = GetLeotherasHuman(bot);
@@ -482,7 +483,7 @@ float FathomLordKarathressWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<FathomLordKarathressMisdirectBossesToTanksAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 12;
 
     auto it = karathressDpsWaitTimer.find(karathress->GetMap()->GetInstanceId());

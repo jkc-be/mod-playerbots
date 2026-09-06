@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "ChooseRpgTargetAction.h"
 #include "BudgetValues.h"
 #include "ChatHelper.h"
@@ -244,7 +245,7 @@ bool ChooseRpgTargetAction::Execute(Event /*event*/)
         relevances.push_back(target.second);
     }
 
-    std::mt19937 gen(time(0));
+    std::mt19937 gen(SimulationClock::Time());
     TravelMgr::instance().weighted_shuffle(guidps.begin(), guidps.end(), relevances.begin(), relevances.end(), gen);
 
     GuidPosition guidP(guidps.front());

@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "MagMultipliers.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -37,7 +38,7 @@ float MagtheridonUseManticronCubeMultiplier::GetValue(Action* action)
 
     auto timerIt = blastNovaTimer.find(bot->GetMap()->GetInstanceId());
     if (timerIt == blastNovaTimer.end() ||
-        time(nullptr) - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
+        SimulationClock::Time() - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
     {
         return 1.0f;
     }
@@ -67,7 +68,7 @@ float MagtheridonWaitToAttackMultiplier::GetValue(Action* action)
 
     constexpr uint8 dpsWaitSeconds = 6;
     auto it = dpsWaitTimer.find(magtheridon->GetMap()->GetInstanceId());
-    if (it != dpsWaitTimer.end() && time(nullptr) - it->second > dpsWaitSeconds)
+    if (it != dpsWaitTimer.end() && SimulationClock::Time() - it->second > dpsWaitSeconds)
         return 1.0f;
 
     if (dynamic_cast<AttackAction*>(action) ||

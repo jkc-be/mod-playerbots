@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "StayActions.h"
 #include "Event.h"
 #include "LastMovementValue.h"
@@ -21,7 +22,7 @@ bool StayActionBase::Stay()
 
     uint32 sitDelay = sPlayerbotAIConfig.sitDelay / 1000;
     time_t stayTime = AI_VALUE(time_t, "stay time");
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     if (!stayTime)
     {
         stayTime = now - urand(0, sitDelay / 2);

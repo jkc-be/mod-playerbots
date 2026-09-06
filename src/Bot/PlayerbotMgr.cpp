@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "PlayerbotMgr.h"
 #include "BroadcastHelper.h"
 #include "ChannelMgr.h"
@@ -379,9 +380,9 @@ void PlayerbotHolder::LogoutPlayerBot(ObjectGuid guid)
         // Unused block. Useful only for timed logout.
 /*
         // check for instant logout
-        bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
+        bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
 
-        if (masterWorldSessionPtr && masterWorldSessionPtr->ShouldLogOut(time(nullptr)))
+        if (masterWorldSessionPtr && masterWorldSessionPtr->ShouldLogOut(SimulationClock::Time()))
             logout = true;
 
         if (masterWorldSessionPtr && !masterWorldSessionPtr->GetPlayer())
@@ -1697,7 +1698,7 @@ void PlayerbotMgr::TellError(std::string const botName, std::string const text)
 
 void PlayerbotMgr::CheckTellErrors(uint32 /*elapsed*/)
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     if ((now - lastErrorTell) < sPlayerbotAIConfig.errorDelay / 1000)
         return;
 

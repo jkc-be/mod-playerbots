@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
 #include "PlayerbotSecurity.h"
 #include "LFGMgr.h"
 #include "PlayerbotAIConfig.h"
@@ -276,9 +277,9 @@ bool PlayerbotSecurity::CheckLevelFor(PlayerbotSecurityLevel level, bool silent,
     ObjectGuid guid = from->GetGUID();
     time_t lastSaid = whispers[guid][text];
 
-    if (!lastSaid || (time(nullptr) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
+    if (!lastSaid || (SimulationClock::Time() - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
-        whispers[guid][text] = time(nullptr);
+        whispers[guid][text] = SimulationClock::Time();
 
         // Additional protection against crashes during logout
         if (bot->IsInWorld() && from->IsInWorld())

@@ -4,6 +4,8 @@
  * or (at your option) any later version.
  */
 
+#include "SimulationClock.h"
+#include "Observatory.h"
 #include "Engine.h"
 #include "Action.h"
 #include "Event.h"
@@ -149,7 +151,7 @@ bool Engine::DoNextAction(Unit* /*unit*/, uint32 /*depth*/, bool minimal)
 
     bool actionExecuted = false;
     ActionBasket* basket = nullptr;
-    time_t currentTime = time(nullptr);
+    time_t currentTime = SimulationClock::Time();
 
     if (!minimal)
         botAI->forceRebuff.RollBuffPendingCycle();
@@ -243,7 +245,7 @@ bool Engine::DoNextAction(Unit* /*unit*/, uint32 /*depth*/, bool minimal)
         delete actionNode;  // Always delete after processing the action node
     }
 
-    if (time(nullptr) - currentTime > 1)
+    if (SimulationClock::Time() - currentTime > 1)
     {
         LogAction("Execution time exceeded 1 second");
     }
@@ -581,6 +583,7 @@ bool Engine::ListenAndExecute(Action* action, Event event)
         return actionExecuted;
     }
 
+    Observatory::Context observationContext(action->getName());
     if (actionExecutionListeners.Before(action, event))
     {
         actionExecuted = actionExecutionListeners.AllowExecution(action, event) ? action->Execute(event) : true;
@@ -607,6 +610,8 @@ bool Engine::ListenAndExecute(Action* action, Event event)
 
     actionExecuted = actionExecutionListeners.OverrideResult(action, actionExecuted, event);
     actionExecutionListeners.After(action, actionExecuted, event);
+    if (actionExecuted)
+        Observatory::Event(botAI->GetBot(), "bot_action", 0, action->getName());
     return actionExecuted;
 }
 

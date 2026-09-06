@@ -4,6 +4,7 @@
  * or (at your option) any later version.
  */
 
+#include "Observatory.h"
 #include "HireAction.h"
 #include "Event.h"
 #include "PlayerbotAI.h"
@@ -54,7 +55,8 @@ bool HireAction::Execute(Event /*event*/)
 
     botAI->TellMaster("I will join you at your next relogin");
 
-    bot->SetMoney(moneyReq);
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+        bot->SetMoney(moneyReq));
     RandomPlayerbotMgr::instance().Remove(bot);
     CharacterDatabase.Execute("UPDATE characters SET account = {} WHERE guid = {}", account,
                               bot->GetGUID().GetCounter());
