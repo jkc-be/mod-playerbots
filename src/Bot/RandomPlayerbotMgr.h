@@ -98,6 +98,7 @@ public:
         return instance;
     }
 
+    void ReconcileObservatoryPopulation();
     void LogPlayerLocation();
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
 

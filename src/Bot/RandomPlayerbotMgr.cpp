@@ -171,7 +171,38 @@ double botPIDImpl::calculate(double setpoint, double pv)
 
 botPIDImpl::~botPIDImpl() {}
 
-uint32 RandomPlayerbotMgr::GetMaxAllowedBotCount() { return GetEventValue(0, "bot_count"); }
+uint32 RandomPlayerbotMgr::GetMaxAllowedBotCount()
+{
+    return SimulationClock::Enabled() ? Observatory::TargetBotCount() : GetEventValue(0, "bot_count");
+}
+
+void RandomPlayerbotMgr::ReconcileObservatoryPopulation()
+{
+    if (!SimulationClock::Enabled())
+        return;
+
+    uint32 target = Observatory::TargetBotCount();
+    // Let outstanding asynchronous logins finish before choosing who to remove.
+    if (botLoading.empty() && currentBots.size() > target)
+    {
+        std::vector<uint32> candidates(currentBots.begin(), currentBots.end());
+        std::sort(candidates.rbegin(), candidates.rend());
+        for (uint32 id : candidates)
+        {
+            if (currentBots.size() <= target)
+                break;
+            if (Player* bot = GetPlayerBot(id))
+            {
+                Observatory::Event(bot, "population_logout", target, "operator target; character preserved");
+                LogoutPlayerBot(bot->GetGUID());
+            }
+            SetEventValue(id, "add", 0, 0);
+            SetEventValue(id, "logout", 0, 0);
+            currentBots.erase(id);
+        }
+    }
+    Observatory::PopulationSettled(botLoading.empty() && currentBots.size() == target && playerBots.size() == target);
+}
 
 void RandomPlayerbotMgr::LogPlayerLocation()
 {
@@ -299,9 +330,9 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
         ScaleBotActivity();
     }*/
 
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
-    if (!maxAllowedBotCount || (maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots ||
-                                maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
+    if (!SimulationClock::Enabled() && (!maxAllowedBotCount ||
+        maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots || maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
     {
         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
         SetEventValue(0, "bot_count", maxAllowedBotCount,
@@ -642,7 +673,7 @@ bool RandomPlayerbotMgr::IsAccountType(uint32 accountId, uint8 accountType)
 // Phase 4 is reached if and only if the value of RandomBotAccountCount is lower than it should.
 uint32 RandomPlayerbotMgr::AddRandomBots()
 {
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
     static time_t missingBotsTimer = 0;
 
     if (currentBots.size() < maxAllowedBotCount)
@@ -2198,14 +2229,14 @@ bool RandomPlayerbotMgr::IsAddclassBot(ObjectGuid::LowType bot)
 
 void RandomPlayerbotMgr::GetBots()
 {
-    if (!currentBots.empty())
+    if (!currentBots.empty() || (SimulationClock::Enabled() && !Observatory::TargetBotCount()))
         return;
 
     PlayerbotsDatabasePreparedStatement* stmt =
         PlayerbotsDatabase.GetPreparedStatement(PLAYERBOTS_SEL_RANDOM_BOTS_BY_OWNER_AND_EVENT);
     stmt->SetData(0, 0);
     stmt->SetData(1, "add");
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
     if (PreparedQueryResult result = PlayerbotsDatabase.Query(stmt))
     {
         do
