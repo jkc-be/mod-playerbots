@@ -32,4 +32,13 @@ public:
     bool isUseful() override;
 };
 
+class DestroyJunkAction : public InventoryAction
+{
+public:
+    DestroyJunkAction(PlayerbotAI* botAI) : InventoryAction(botAI, "destroy junk") {}
+
+    bool Execute(Event event) override;
+    bool isUseful() override;
+};
+
 #endif

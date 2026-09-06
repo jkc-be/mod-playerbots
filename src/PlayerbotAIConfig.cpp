@@ -707,6 +707,7 @@ bool PlayerbotAIConfig::Initialize()
 
     // SPP automation
     freeMethodLoot = sConfigMgr->GetOption<bool>("AiPlayerbot.FreeMethodLoot", false);
+    autoDestroyJunk = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoDestroyJunk", false);
     lootNeedRollLevel = sConfigMgr->GetOption<int32>("AiPlayerbot.LootNeedRollLevel", 1);
     lootRollRecipe = sConfigMgr->GetOption<bool>("AiPlayerbot.LootRollRecipe", false);
     lootRollDisenchant = sConfigMgr->GetOption<bool>("AiPlayerbot.LootRollDisenchant", false);

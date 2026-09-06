@@ -371,6 +371,7 @@ public:
     uint32 botActiveAloneSmartScaleWhenMaxLevel;
 
     bool freeMethodLoot;
+    bool autoDestroyJunk;
     int32 lootNeedRollLevel;
     bool lootGreedRollLevel;
     bool lootRollRecipe;

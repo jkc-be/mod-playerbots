@@ -197,6 +197,7 @@ public:
         creators["use random quest item"] = &ActionContext::use_random_quest_item;
         creators["craft random item"] = &ActionContext::craft_random_item;
         creators["smart destroy item"] = &ActionContext::smart_destroy_item;
+        creators["destroy junk"] = &ActionContext::destroy_junk;
         creators["disenchant random item"] = &ActionContext::disenchant_random_item;
         creators["enchant random item"] = &ActionContext::enchant_random_item;
         creators["reset instances"] = &ActionContext::reset_instances;
@@ -404,6 +405,7 @@ private:
     static Action* use_random_quest_item(PlayerbotAI* botAI) { return new UseRandomQuestItem(botAI); }
     static Action* craft_random_item(PlayerbotAI* botAI) { return new CraftRandomItemAction(botAI); }
     static Action* smart_destroy_item(PlayerbotAI* botAI) { return new SmartDestroyItemAction(botAI); }
+    static Action* destroy_junk(PlayerbotAI* botAI) { return new DestroyJunkAction(botAI); }
     static Action* disenchant_random_item(PlayerbotAI* botAI) { return new DisEnchantRandomItemAction(botAI); }
     static Action* enchant_random_item(PlayerbotAI* botAI) { return new EnchantRandomItemAction(botAI); }
     static Action* reset_instances(PlayerbotAI* botAI) { return new ResetInstancesAction(botAI); }

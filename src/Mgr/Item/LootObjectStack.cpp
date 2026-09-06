@@ -12,6 +12,7 @@
 #include "Playerbots.h"
 #include "SimulationClock.h"
 #include "Unit.h"
+#include <algorithm>
 
 #define MAX_LOOT_OBJECT_COUNT 200
 
@@ -352,6 +353,8 @@ bool LootObject::IsLootPossible(Player* bot)
 
 bool LootObjectStack::Add(ObjectGuid guid)
 {
+    if (IsDeferred(guid))
+        return false;
     if (availableLoot.size() >= MAX_LOOT_OBJECT_COUNT)
     {
         availableLoot.shrink(SimulationClock::Time() - 30);
@@ -375,7 +378,32 @@ void LootObjectStack::Remove(ObjectGuid guid)
         availableLoot.erase(i);
 }
 
-void LootObjectStack::Clear() { availableLoot.clear(); }
+void LootObjectStack::Clear()
+{
+    availableLoot.clear();
+    deferredLoot.clear();
+}
+
+void LootObjectStack::Defer(ObjectGuid guid)
+{
+    Remove(guid);
+    time_t const now = SimulationClock::Time();
+    std::erase_if(deferredLoot, [now](auto const& entry) { return entry.second <= now; });
+    if (deferredLoot.size() >= MAX_LOOT_OBJECT_COUNT)
+        deferredLoot.erase(deferredLoot.begin());
+    deferredLoot[guid] = now + 30;
+}
+
+bool LootObjectStack::IsDeferred(ObjectGuid guid)
+{
+    auto const it = deferredLoot.find(guid);
+    if (it == deferredLoot.end())
+        return false;
+    if (it->second > SimulationClock::Time())
+        return true;
+    deferredLoot.erase(it);
+    return false;
+}
 
 bool LootObjectStack::CanLoot(float maxDistance)
 {
@@ -400,6 +428,9 @@ LootObject LootObjectStack::GetNearest(float maxDistance)
     for (LootTargetList::iterator i = safeCopy.begin(); i != safeCopy.end(); i++)
     {
         ObjectGuid guid = i->guid;
+
+        if (IsDeferred(guid))
+            continue;
 
         WorldObject* worldObj = ObjectAccessor::GetWorldObject(*bot, guid);
         if (!worldObj)

@@ -8,6 +8,7 @@
 #define PLAYERBOTS_LOOTOBJECTSTACK_H
 
 #include "ObjectGuid.h"
+#include <map>
 
 class AiObjectContext;
 class Player;
@@ -74,15 +75,18 @@ public:
 
     bool Add(ObjectGuid guid);
     void Remove(ObjectGuid guid);
+    void Defer(ObjectGuid guid);
     void Clear();
     bool CanLoot(float maxDistance);
     LootObject GetLoot(float maxDistance = 0);
 
 private:
     LootObject GetNearest(float maxDistance = 0);
+    bool IsDeferred(ObjectGuid guid);
 
     Player* bot;
     LootTargetList availableLoot;
+    std::map<ObjectGuid, time_t> deferredLoot;
 };
 
 #endif
