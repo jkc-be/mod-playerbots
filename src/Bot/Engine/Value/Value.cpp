@@ -5,8 +5,10 @@
  */
 
 #include "Value.h"
+
 #include "PerfMonitor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Timer.h"
 
 UnitCalculatedValue::UnitCalculatedValue(PlayerbotAI* botAI, std::string const name, int32 checkInterval)
@@ -68,7 +70,7 @@ std::string const CDPairCalculatedValue::Format()
 CDPairListCalculatedValue::CDPairListCalculatedValue(PlayerbotAI* botAI, std::string const name, int32 checkInterval)
     : CalculatedValue<std::vector<CreatureData const*>>(botAI, name, checkInterval)
 {
-    // lastCheckTime = time(nullptr) - checkInterval / 2;
+    // lastCheckTime = SimulationClock::Time() - checkInterval / 2;
 }
 
 std::string const CDPairListCalculatedValue::Format()
@@ -88,7 +90,7 @@ std::string const CDPairListCalculatedValue::Format()
 ObjectGuidCalculatedValue::ObjectGuidCalculatedValue(PlayerbotAI* botAI, std::string const name, int32 checkInterval)
     : CalculatedValue<ObjectGuid>(botAI, name, checkInterval)
 {
-    // lastCheckTime = time(nullptr) - checkInterval / 2;
+    // lastCheckTime = SimulationClock::Time() - checkInterval / 2;
 }
 
 std::string const ObjectGuidCalculatedValue::Format()

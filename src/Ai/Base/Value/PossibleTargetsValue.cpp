@@ -5,6 +5,7 @@
  */
 
 #include "PossibleTargetsValue.h"
+
 #include "AreaDefines.h"
 #include "AttackersValue.h"
 #include "CellImpl.h"
@@ -13,6 +14,7 @@
 #include "GridNotifiersImpl.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "SpellAuraDefines.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
@@ -112,7 +114,7 @@ bool PossibleTargetsValue::AcceptUnit(Unit* unit)
         if (attackChance < 100)
         {
             // Decisions remain stable for ATTACK_DECISION_TIME_WINDOW.
-            time_t timeWindow = time(nullptr) / ATTACK_DECISION_TIME_WINDOW;
+            time_t timeWindow = SimulationClock::Time() / ATTACK_DECISION_TIME_WINDOW;
 
             // FNV-1a hash used to deterministically convert botGUID, targetGUID, and timeWindow
             // into a consistent percentage chance without needing to cache previous decisions.

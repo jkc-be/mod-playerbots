@@ -5,6 +5,11 @@
  */
 
 #include "PlayerbotAIConfig.h"
+
+#include <cctype>
+#include <iostream>
+#include <sstream>
+
 #include "BisListMgr.h"
 #include "Config.h"
 #include "NewRpgInfo.h"
@@ -15,11 +20,9 @@
 #include "RandomItemMgr.h"
 #include "RandomPlayerbotFactory.h"
 #include "RandomPlayerbotMgr.h"
+#include "SimulationClock.h"
 #include "Talentspec.h"
 #include "TravelMgr.h"
-#include <cctype>
-#include <iostream>
-#include <sstream>
 
 template <class T>
 void LoadList(std::string const value, T& list)
@@ -972,7 +975,7 @@ bool PlayerbotAIConfig::IsRestrictedHealerDPSMap(uint32 mapId) const
 
 std::string const PlayerbotAIConfig::GetTimestampStr()
 {
-    time_t t = time(nullptr);
+    time_t t = SimulationClock::Time();
     tm* aTm = localtime(&t);
     //       YYYY   year
     //       MM     month (2 digits 01-12)

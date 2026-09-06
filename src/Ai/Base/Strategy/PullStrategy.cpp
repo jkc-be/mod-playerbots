@@ -14,11 +14,13 @@
  */
 
 #include "PullStrategy.h"
+
 #include "AiObjectContext.h"
 #include "PassiveMultiplier.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "SpellMgr.h"
 
 class PullStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -159,7 +161,7 @@ void PullStrategy::RequestPull(Unit* target, bool resetTime)
     SetTarget(target);
     pendingToStart = true;
     if (resetTime)
-        pullStartTime = time(nullptr);
+        pullStartTime = SimulationClock::Time();
 }
 
 void PullStrategy::OnPullStarted() { pendingToStart = false; }

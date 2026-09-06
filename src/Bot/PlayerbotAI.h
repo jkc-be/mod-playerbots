@@ -24,6 +24,9 @@
 #include "Util.h"
 #include "WorldPacket.h"
 #include <stack>
+#include <atomic>
+
+#define PLAYERBOTS_EXTERNAL_CONTROL_API 1
 
 class AiObjectContext;
 class Creature;
@@ -352,6 +355,7 @@ public:
     void AddHandler(uint16 opcode, std::string const handler);
     void Handle(ExternalEventHelper& helper);
     void AddPacket(WorldPacket const& packet);
+    void Clear() { queue = {}; }
 
 private:
     std::map<uint16, std::string> handlers;
@@ -389,6 +393,12 @@ public:
     PlayerbotAI();
     PlayerbotAI(Player* bot);
     virtual ~PlayerbotAI();
+
+    // Change ownership only at a world-update boundary, after map workers finish.
+    void SetExternalControl(bool enabled);
+    bool IsExternallyControlled() const { return externalControl.load(); }
+    uint64 GetExternalControlGeneration() const { return externalControlGeneration; }
+    uint64 GetExternalControlEpoch() const { return externalControlEpoch.load(); }
 
     void UpdateAI(uint32 elapsed, bool minimal = false) override;
     void UpdateAIInternal(uint32 elapsed, bool minimal = false) override;
@@ -654,6 +664,12 @@ protected:
     Position jumpDestination = Position();
     uint32 nextTransportCheck = 0;
     bool spellInterruptRequested = false;
+
+private:
+    inline static std::atomic<uint64> nextExternalControlGeneration{0};
+    uint64 const externalControlGeneration = ++nextExternalControlGeneration;
+    std::atomic<uint64> externalControlEpoch{0};
+    std::atomic<bool> externalControl{false};
 };
 
 #endif

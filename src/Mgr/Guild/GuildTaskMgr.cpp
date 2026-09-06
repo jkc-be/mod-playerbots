@@ -5,6 +5,7 @@
  */
 
 #include "GuildTaskMgr.h"
+
 #include "ChatHelper.h"
 #include "Group.h"
 #include "GuildMgr.h"
@@ -14,6 +15,7 @@
 #include "Playerbots.h"
 #include "RandomItemMgr.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 char* strstri(char const* str1, char const* str2);
 
@@ -316,7 +318,7 @@ std::string const formatTime(uint32 secs)
 
 std::string const formatDateTime(uint32 secs)
 {
-    time_t rawtime = time(nullptr) + secs;
+    time_t rawtime = SimulationClock::Time() + secs;
     tm* timeinfo = localtime(&rawtime);
 
     char buffer[256];
@@ -543,7 +545,7 @@ bool GuildTaskMgr::IsGuildTaskItem(uint32 itemId, uint32 guildId)
         value = fields[0].Get<uint32>();
         uint32 lastChangeTime = fields[1].Get<uint32>();
         uint32 validIn = fields[2].Get<uint32>();
-        if ((time(nullptr) - lastChangeTime) >= validIn)
+        if ((SimulationClock::Time() - lastChangeTime) >= validIn)
             value = 0;
     }
 
@@ -573,7 +575,7 @@ std::map<uint32, uint32> GuildTaskMgr::GetTaskValues(uint32 owner, std::string c
             uint32 lastChangeTime = fields[1].Get<uint32>();
             uint32 secs = fields[2].Get<uint32>();
             uint32 guildId = fields[3].Get<uint32>();
-            if ((time(nullptr) - lastChangeTime) >= secs)
+            if ((SimulationClock::Time() - lastChangeTime) >= secs)
                 value = 0;
 
             results[guildId] = value;
@@ -604,7 +606,7 @@ uint32 GuildTaskMgr::GetTaskValue(uint32 owner, uint32 guildId, std::string cons
         value = fields[0].Get<uint32>();
         uint32 lastChangeTime = fields[1].Get<uint32>();
         uint32 secs = fields[2].Get<uint32>();
-        if ((time(nullptr) - lastChangeTime) >= secs)
+        if ((SimulationClock::Time() - lastChangeTime) >= secs)
             value = 0;
 
         if (validIn)
@@ -627,7 +629,7 @@ uint32 GuildTaskMgr::SetTaskValue(uint32 owner, uint32 guildId, std::string cons
         stmt = PlayerbotsDatabase.GetPreparedStatement(PLAYERBOTS_INS_GUILD_TASKS);
         stmt->SetData(0, owner);
         stmt->SetData(1, guildId);
-        stmt->SetData(2, (uint32)time(nullptr));
+        stmt->SetData(2, (uint32)SimulationClock::Time());
         stmt->SetData(3, validIn);
         stmt->SetData(4, type);
         stmt->SetData(5, value);
@@ -690,7 +692,7 @@ bool GuildTaskMgr::HandleConsoleCommand(ChatHandler* /* handler */, char const* 
                 uint32 value = fields[0].Get<uint32>();
                 uint32 lastChangeTime = fields[1].Get<uint32>();
                 uint32 validIn = fields[2].Get<uint32>();
-                if ((time(nullptr) - lastChangeTime) >= validIn)
+                if ((SimulationClock::Time() - lastChangeTime) >= validIn)
                     value = 0;
 
                 uint32 guildId = fields[3].Get<uint32>();
@@ -1094,7 +1096,7 @@ void GuildTaskMgr::CheckKillTaskInternal(Player* player, Unit* victim)
 
 void GuildTaskMgr::CleanupAdverts()
 {
-    uint32 deliverTime = time(nullptr) - sPlayerbotAIConfig.minGuildTaskChangeTime;
+    uint32 deliverTime = SimulationClock::Time() - sPlayerbotAIConfig.minGuildTaskChangeTime;
     QueryResult result = CharacterDatabase.Query(
         "SELECT id, receiver FROM mail WHERE subject LIKE 'Guild Task%%' AND deliver_time <= {}", deliverTime);
     if (!result)
@@ -1122,7 +1124,7 @@ void GuildTaskMgr::CleanupAdverts()
 
 void GuildTaskMgr::RemoveDuplicatedAdverts()
 {
-    uint32 deliverTime = time(nullptr);
+    uint32 deliverTime = SimulationClock::Time();
     QueryResult result = CharacterDatabase.Query(
         "SELECT m.id, m.receiver FROM (SELECT MAX(id) AS id, subject, receiver FROM mail WHERE subject LIKE 'Guild "
         "Task%%' "

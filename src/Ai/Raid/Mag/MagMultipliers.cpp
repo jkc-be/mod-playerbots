@@ -5,6 +5,10 @@
  */
 
 #include "MagMultipliers.h"
+
+#include <ctime>
+#include <unordered_map>
+
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
 #include "DruidBearActions.h"
@@ -18,10 +22,9 @@
 #include "PaladinActions.h"
 #include "Playerbots.h"
 #include "ReachTargetActions.h"
+#include "SimulationClock.h"
 #include "WarriorActions.h"
 #include "WipeAction.h"
-#include <ctime>
-#include <unordered_map>
 
 using namespace MagtheridonHelpers;
 
@@ -36,8 +39,7 @@ float MagtheridonUseManticronCubeMultiplier::GetValue(Action* action)
         return 1.0f;
 
     auto timerIt = blastNovaTimer.find(bot->GetMap()->GetInstanceId());
-    if (timerIt == blastNovaTimer.end() ||
-        time(nullptr) - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
+    if (timerIt == blastNovaTimer.end() || SimulationClock::Time() - timerIt->second < BLAST_NOVA_INTERIM_SECONDS)
     {
         return 1.0f;
     }
@@ -67,7 +69,7 @@ float MagtheridonWaitToAttackMultiplier::GetValue(Action* action)
 
     constexpr uint8 dpsWaitSeconds = 6;
     auto it = dpsWaitTimer.find(magtheridon->GetMap()->GetInstanceId());
-    if (it != dpsWaitTimer.end() && time(nullptr) - it->second > dpsWaitSeconds)
+    if (it != dpsWaitTimer.end() && SimulationClock::Time() - it->second > dpsWaitSeconds)
         return 1.0f;
 
     if (dynamic_cast<AttackAction*>(action) ||

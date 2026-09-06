@@ -5,6 +5,9 @@
  */
 
 #include "KaraMultipliers.h"
+
+#include <ctime>
+
 #include "AttackAction.h"
 #include "ChooseTargetActions.h"
 #include "DKActions.h"
@@ -21,8 +24,8 @@
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "WarriorActions.h"
-#include <ctime>
 
 using namespace KaraHelpers;
 
@@ -123,7 +126,7 @@ float AttumenTheHuntsmanWaitForDpsMultiplier::GetValue(Action* action)
     if (PlayerbotAI::IsMainTank(bot))
         return 1.0f;
 
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 5;
 
     auto it = attumenDpsWaitTimer.find(attumen->GetMap()->GetInstanceId());
@@ -338,7 +341,7 @@ float NetherspiteWaitForDpsMultiplier::GetValue(Action* action)
     if (!netherspite || IsBanishPhase(netherspite))
         return 1.0f;
 
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 5;
 
     auto it = netherspiteDpsWaitTimer.find(netherspite->GetMap()->GetInstanceId());
@@ -473,7 +476,7 @@ float NightbaneWaitForDpsMultiplier::GetValue(Action* action)
     if (PlayerbotAI::IsMainTank(bot))
         return 1.0f;
 
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 8;
 
     auto it = nightbaneDpsWaitTimer.find(nightbane->GetMap()->GetInstanceId());
@@ -532,7 +535,7 @@ float NightbaneDisableMovementMultiplier::GetValue(Action* action)
         return 0.0f;
 
     // After 35s, Nightbane goes to land, and bots freely follow their master
-    time_t const now = std::time(nullptr);
+    time_t const now = SimulationClock::Time();
     constexpr uint8 flightPhaseDurationSeconds = 35;
 
     auto const it = nightbaneFlightPhaseStartTimer.find(nightbane->GetMap()->GetInstanceId());

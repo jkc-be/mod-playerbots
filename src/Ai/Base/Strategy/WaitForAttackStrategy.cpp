@@ -5,10 +5,12 @@
  */
 
 #include "WaitForAttackStrategy.h"
+
 #include "Action.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Strategy.h"
 
 void WaitForAttackStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
@@ -45,11 +47,11 @@ bool WaitForAttackStrategy::ShouldWait(PlayerbotAI* botAI)
             {
                 if (combatStartTime == 0)
                 {
-                    combatStartTime = time(nullptr);
+                    combatStartTime = SimulationClock::Time();
                     context->GetValue<time_t>("combat start time")->Set(combatStartTime);
                 }
 
-                return time(nullptr) - combatStartTime < GetWaitTime(botAI);
+                return SimulationClock::Time() - combatStartTime < GetWaitTime(botAI);
             }
         }
     }

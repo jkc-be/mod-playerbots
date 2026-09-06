@@ -5,6 +5,7 @@
  */
 
 #include "ReleaseSpiritAction.h"
+
 #include "Corpse.h"
 #include "Event.h"
 #include "GameGraveyard.h"
@@ -15,6 +16,7 @@
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 // ReleaseSpiritAction implementation
 bool ReleaseSpiritAction::Execute(Event event)
@@ -119,7 +121,7 @@ bool AutoReleaseSpiritAction::isUseful()
 bool AutoReleaseSpiritAction::HandleBattlegroundSpiritHealer()
 {
     constexpr uint32_t RESURRECT_DELAY = 15;
-    const time_t now = time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     if ((now - m_bgGossipTime < RESURRECT_DELAY) &&
         bot->HasAura(SPELL_WAITING_FOR_RESURRECT))
@@ -204,7 +206,7 @@ bool AutoReleaseSpiritAction::ShouldDelayBattlegroundRelease() const
     }
 
     // Delay release to spirit.
-    const time_t now = time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr time_t RELEASE_DELAY = 6;
 
     if (botAI->bgReleaseAttemptTime == 0)
@@ -239,7 +241,7 @@ bool RepopAction::isUseful()
 int64 RepopAction::CalculateDeadTime() const
 {
     if (Corpse* corpse = bot->GetCorpse())
-        return time(nullptr) - corpse->GetGhostTime();
+        return SimulationClock::Time() - corpse->GetGhostTime();
 
     return bot->isDead() ? 0 : 60 * MINUTE;
 }

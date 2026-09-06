@@ -5,11 +5,13 @@
  */
 
 #include "Formations.h"
+
 #include "Arrow.h"
 #include "Event.h"
 #include "Map.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 WorldLocation Formation::NullLocation = WorldLocation();
 
@@ -145,7 +147,7 @@ public:
         float range = sPlayerbotAIConfig.followDistance;
         float angle = GetFollowAngle();
 
-        time_t now = time(nullptr);
+        time_t now = SimulationClock::Time();
         if (!lastChangeTime || now - lastChangeTime >= 3)
         {
             lastChangeTime = now;

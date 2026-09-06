@@ -5,9 +5,11 @@
  */
 
 #include "EmoteAction.h"
+
 #include "Event.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 std::map<std::string, uint32> EmoteActionBase::emotes;
 std::map<std::string, uint32> EmoteActionBase::textEmotes;
@@ -736,7 +738,7 @@ bool EmoteAction::Execute(Event event)
         // time_t lastEmote = AI_VALUE2(time_t, "last emote", qualifier); //not used, line marked for removal.
         botAI->GetAiObjectContext()
             ->GetValue<time_t>("last emote", qualifier)
-            ->Set(time(nullptr) + urand(1000, sPlayerbotAIConfig.repeatDelay) / 1000);
+            ->Set(SimulationClock::Time() + urand(1000, sPlayerbotAIConfig.repeatDelay) / 1000);
         param = qualifier;
     }
 
@@ -783,7 +785,7 @@ bool EmoteAction::isUseful()
         return false;
 
     time_t lastEmote = AI_VALUE2(time_t, "last emote", qualifier);
-    return time(nullptr) >= lastEmote;
+    return SimulationClock::Time() >= lastEmote;
 }
 
 bool TalkAction::Execute(Event /*event*/)

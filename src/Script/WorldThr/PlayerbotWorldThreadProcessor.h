@@ -60,6 +60,7 @@ public:
      * @return true if operation was queued, false if queue is full
      */
     bool QueueOperation(std::unique_ptr<PlayerbotOperation> operation);
+    void CancelForBot(ObjectGuid guid);
 
     /**
      * @brief Get current queue size

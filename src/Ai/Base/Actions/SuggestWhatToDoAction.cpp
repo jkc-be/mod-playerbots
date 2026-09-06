@@ -5,6 +5,9 @@
  */
 
 #include "SuggestWhatToDoAction.h"
+
+#include <functional>
+
 #include "AiFactory.h"
 #include "BroadcastHelper.h"
 #include "Channel.h"
@@ -13,7 +16,7 @@
 #include "ItemVisitors.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
-#include <functional>
+#include "SimulationClock.h"
 
 enum eTalkType
 {
@@ -47,7 +50,7 @@ bool SuggestWhatToDoAction::isUseful()
 
     std::string qualifier = "suggest what to do";
     time_t lastSaid = AI_VALUE2(time_t, "last said", qualifier);
-    return (time(0) - lastSaid) > 30;
+    return (SimulationClock::Time() - lastSaid) > 30;
 }
 
 bool SuggestWhatToDoAction::Execute(Event /*event*/)
@@ -57,7 +60,7 @@ bool SuggestWhatToDoAction::Execute(Event /*event*/)
     fnct_ptr();
 
     std::string const qualifier = "suggest what to do";
-    botAI->GetAiObjectContext()->GetValue<time_t>("last said", qualifier)->Set(time(nullptr) + urand(1, 60));
+    botAI->GetAiObjectContext()->GetValue<time_t>("last said", qualifier)->Set(SimulationClock::Time() + urand(1, 60));
 
     return true;
 }

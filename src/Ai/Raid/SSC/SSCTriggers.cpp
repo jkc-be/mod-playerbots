@@ -5,6 +5,7 @@
  */
 
 #include "SSCTriggers.h"
+
 #include "AiFactory.h"
 #include "Corpse.h"
 #include "EncounterHelpers.h"
@@ -13,6 +14,7 @@
 #include "Playerbots.h"
 #include "SSCActions.h"
 #include "SSCHelpers.h"
+#include "SimulationClock.h"
 
 using namespace SerpentShrineCavernHelpers;
 using namespace EncounterHelpers;
@@ -103,7 +105,7 @@ bool TheLurkerBelowSpoutIsActiveTrigger::IsActive()
     if (!lurker)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     auto it = lurkerSpoutTimer.find(lurker->GetMap()->GetInstanceId());
     return it != lurkerSpoutTimer.end() && it->second > now;
@@ -118,7 +120,7 @@ bool TheLurkerBelowBossIsActiveForMainTankTrigger::IsActive()
     if (!lurker)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     auto it = lurkerSpoutTimer.find(lurker->GetMap()->GetInstanceId());
     return lurker->getStandState() != UNIT_STAND_STATE_SUBMERGED &&
@@ -134,7 +136,7 @@ bool TheLurkerBelowBossCastsGeyserTrigger::IsActive()
     if (!lurker)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     auto it = lurkerSpoutTimer.find(lurker->GetMap()->GetInstanceId());
     return lurker->getStandState() != UNIT_STAND_STATE_SUBMERGED &&

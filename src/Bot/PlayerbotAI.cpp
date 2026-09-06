@@ -5,6 +5,12 @@
  */
 
 #include "PlayerbotAI.h"
+
+#include <cmath>
+#include <mutex>
+#include <sstream>
+#include <string>
+
 #include "AiFactory.h"
 #include "BudgetValues.h"
 #include "ChannelMgr.h"
@@ -30,13 +36,16 @@
 #include "MotionMaster.h"
 #include "MoveSplineInit.h"
 #include "NewRpgStrategy.h"
+#include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "Player.h"
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotGuildMgr.h"
 #include "PlayerbotMgr.h"
+#include "PlayerbotWorldThreadProcessor.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
@@ -46,6 +55,7 @@
 #include "ScriptMgr.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "SocialMgr.h"
 #include "SpellAuraEffects.h"
 #include "SpellInfo.h"
@@ -53,10 +63,6 @@
 #include "Unit.h"
 #include "UpdateTime.h"
 #include "Vehicle.h"
-#include <cmath>
-#include <mutex>
-#include <sstream>
-#include <string>
 
 namespace
 {
@@ -243,8 +249,34 @@ PlayerbotAI::~PlayerbotAI()
         PlayerbotsMgr::instance().RemovePlayerBotData(bot->GetGUID(), true);
 }
 
+void PlayerbotAI::SetExternalControl(bool enabled)
+{
+    if (externalControl.exchange(enabled) == enabled)
+        return;
+    ++externalControlEpoch;
+    // A headless bot can become a selfbot during login. Never clear a real client's packets or movement.
+    if (!bot || !bot->GetSession() || IsSelfBot(bot))
+        return;
+    chatCommands.clear();
+    chatReplies.clear();
+    botOutgoingPacketHandlers.Clear();
+    masterIncomingPacketHandlers.Clear();
+    masterOutgoingPacketHandlers.Clear();
+    PlayerbotWorldThreadProcessor::instance().CancelForBot(bot->GetGUID());
+    WorldPacket* packet = nullptr;
+    while (bot->GetSession()->GetPacketQueue().next(packet))
+        delete packet;
+    // Reset cached decisions at both boundaries. Teleport/session maintenance remains enabled.
+    Reset(true);
+    bot->StopMoving();
+    bot->CombatStopWithPets(true);
+}
+
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 {
+    if (IsExternallyControlled())
+        return;
+    Observatory::Event(bot, "ai_update");
     // Handle the AI check delay
     if (nextAICheckDelay > elapsed)
         nextAICheckDelay -= elapsed;
@@ -261,13 +293,15 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
         (static_cast<uint32>(GetCheat()) > 0 || static_cast<uint32>(sPlayerbotAIConfig.botCheatMask) > 0))
     {
         if (HasCheat(BotCheatMask::health))
-            bot->SetFullHealth();
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetFullHealth"), bot->SetFullHealth());
 
         if (HasCheat(BotCheatMask::mana) && bot->getPowerType() == POWER_MANA)
-            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+             bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
 
         if (HasCheat(BotCheatMask::power) && bot->getPowerType() != POWER_MANA)
-            bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType()));
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+             bot->SetPower(bot->getPowerType(), bot->GetMaxPower(bot->getPowerType())));
     }
 
     AllowActivity();
@@ -473,6 +507,8 @@ void PlayerbotAI::UpdateAIGroupMaster()
 
 void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal)
 {
+    if (IsExternallyControlled())
+        return;
 
     if (!bot || !bot->GetSession())
         return;
@@ -494,7 +530,7 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
     for (auto it = chatReplies.begin(); it != chatReplies.end();)
     {
         time_t checkTime = it->m_time;
-        if (checkTime && time(0) < checkTime)
+        if (checkTime && SimulationClock::Time() < checkTime)
         {
             ++it;
             continue;
@@ -510,7 +546,7 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
     if (bot->GetSession()->isLogingOut())
     {
         WorldSession* botWorldSessionPtr = bot->GetSession();
-        bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
+        bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
         if (!master || !master->GetSession()->GetPlayer())
             logout = true;
 
@@ -560,12 +596,15 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
 
 void PlayerbotAI::HandleCommands()
 {
+    if (IsExternallyControlled())
+        return;
+
     ExternalEventHelper helper(aiObjectContext);
 
     for (auto it = chatCommands.begin(); it != chatCommands.end();)
     {
         time_t& checkTime = it->GetTime();
-        if (checkTime && time(nullptr) < checkTime)
+        if (checkTime && SimulationClock::Time() < checkTime)
         {
             ++it;
             continue;
@@ -599,6 +638,9 @@ void PlayerbotAI::HandleCommands()
 std::map<std::string, ChatMsg> chatMap;
 void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fromPlayer, const uint32 lang)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (!bot)
         return;
 
@@ -652,7 +694,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fr
         if (filtered.find(i->first) == 0)
         {
             filtered = filtered.substr(3);
-            currentChat = std::pair<ChatMsg, time_t>(i->second, time(0) + 2);
+            currentChat = std::pair<ChatMsg, time_t>(i->second, SimulationClock::Time() + 2);
             break;
         }
     }
@@ -717,7 +759,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fr
             }
         }
 
-        chatCommands.push_back(ChatCommandHolder(remaining, &fromPlayer, type, time(0) + index));
+        chatCommands.push_back(ChatCommandHolder(remaining, &fromPlayer, type, SimulationClock::Time() + index));
     }
     else if (filtered == "reset")
     {
@@ -857,7 +899,7 @@ void PlayerbotAI::Reset(bool full)
         return;
 
     WorldSession* botWorldSessionPtr = bot->GetSession();
-    bool logout = botWorldSessionPtr->ShouldLogOut(time(nullptr));
+    bool logout = botWorldSessionPtr->ShouldLogOut(SimulationClock::Time());
 
     // cancel logout
     if (!logout && bot->GetSession()->isLogingOut())
@@ -949,6 +991,9 @@ bool PlayerbotAI::IsAllowedCommand(std::string const text)
 
 void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fromPlayer)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, fromPlayer))
         return;
 
@@ -994,7 +1039,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
         if (filtered.find(i->first) == 0)
         {
             filtered = filtered.substr(3);
-            currentChat = std::pair<ChatMsg, time_t>(i->second, time(nullptr) + 2);
+            currentChat = std::pair<ChatMsg, time_t>(i->second, SimulationClock::Time() + 2);
             break;
         }
     }
@@ -1048,7 +1093,7 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
             }
         }
 
-        chatCommands.push_back(ChatCommandHolder(remaining, fromPlayer, type, time(nullptr) + index));
+        chatCommands.push_back(ChatCommandHolder(remaining, fromPlayer, type, SimulationClock::Time() + index));
     }
     else if (filtered == "reset")
     {
@@ -1117,6 +1162,9 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
 
 void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (packet.empty())
         return;
 
@@ -1223,7 +1271,7 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
                 if (guid1 != bot->GetGUID())
                 {
                     time_t lastChat = GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Get();
-                    bool isPaused = time(0) < lastChat;
+                    bool isPaused = SimulationClock::Time() < lastChat;
                     bool isFromFreeBot = false;
                     sCharacterCache->GetCharacterNameByGuid(guid1, name);
                     uint32 accountId = sCharacterCache->GetCharacterAccountIdByGuid(guid1);
@@ -1276,10 +1324,12 @@ void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
                         }
                     }
 
-                    QueueChatResponse(ChatQueuedReply{msgtype, guid1.GetCounter(), guid2.GetCounter(), message,
-                                                      chanName, name,
-                                                      time(nullptr) + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
-                    GetAiObjectContext()->GetValue<time_t>("last said", "chat")->Set(time(0) + urand(5, 25));
+                    QueueChatResponse(
+                        ChatQueuedReply{msgtype, guid1.GetCounter(), guid2.GetCounter(), message, chanName, name,
+                                        SimulationClock::Time() + urand(inCombat ? 10 : 5, inCombat ? 25 : 15)});
+                    GetAiObjectContext()
+                        ->GetValue<time_t>("last said", "chat")
+                        ->Set(SimulationClock::Time() + urand(5, 25));
                     return;
                 }
             }
@@ -1422,11 +1472,17 @@ int32 PlayerbotAI::CalculateGlobalCooldown(uint32 spellid)
 
 void PlayerbotAI::HandleMasterIncomingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     masterIncomingPacketHandlers.AddPacket(packet);
 }
 
 void PlayerbotAI::HandleMasterOutgoingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     masterOutgoingPacketHandlers.AddPacket(packet);
 }
 
@@ -1460,7 +1516,7 @@ void PlayerbotAI::ChangeEngine(BotState type)
 void PlayerbotAI::ChangeEngineOnCombat()
 {
     if (HasStrategy("wait for attack", BOT_STATE_COMBAT))
-        aiObjectContext->GetValue<time_t>("combat start time")->Set(time(nullptr));
+        aiObjectContext->GetValue<time_t>("combat start time")->Set(SimulationClock::Time());
 
     if (HasStrategy("stay", BOT_STATE_COMBAT))
     {
@@ -1793,6 +1849,9 @@ bool PlayerbotAI::HasTargetExclusions() const
 
 bool PlayerbotAI::DoSpecificAction(std::string const name, Event event, bool silent, std::string const qualifier)
 {
+    if (IsExternallyControlled())
+        return false;
+
     std::ostringstream out;
 
     for (uint8 i = 0; i < BOT_STATE_MAX; i++)
@@ -3026,12 +3085,12 @@ bool PlayerbotAI::TellMasterNoFacing(std::string const text, PlayerbotSecurityLe
 
     time_t lastSaid = whispers[text];
 
-    if (!lastSaid || (time(nullptr) - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
+    if (!lastSaid || (SimulationClock::Time() - lastSaid) >= sPlayerbotAIConfig.repeatDelay / 1000)
     {
-        whispers[text] = time(nullptr);
+        whispers[text] = SimulationClock::Time();
 
         ChatMsg type = CHAT_MSG_WHISPER;
-        if (currentChat.second - time(nullptr) >= 1)
+        if (currentChat.second - SimulationClock::Time() >= 1)
             type = currentChat.first;
 
         WorldPacket data;
@@ -3290,11 +3349,17 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
 
 bool PlayerbotAI::CanCastSpell(std::string const name, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, true, itemTarget);
 }
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell, Item* itemTarget, Item* castItem)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
     {
         if (!sPlayerbotAIConfig.logInGroupOnly || (bot->GetGroup() && HasGameClientMaster()))
@@ -3453,6 +3518,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell,
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, bool checkHasSpell)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
         return false;
 
@@ -3511,6 +3579,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, bool checkH
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, bool checkHasSpell, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
         return false;
 
@@ -3560,13 +3631,16 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, bool c
 
 bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!IsValidUnit(target))
         return false;
 
     bool result = CastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, itemTarget);
     if (result)
     {
-        aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(time(nullptr));
+        aiObjectContext->GetValue<time_t>("last spell cast time", name)->Set(SimulationClock::Time());
     }
 
     return result;
@@ -3574,6 +3648,9 @@ bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarg
 
 bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -3831,7 +3908,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
     // WaitForSpellCast(spell);
 
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(nullptr));
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")
+        ->Get()
+        .Set(spellId, target->GetGUID(), SimulationClock::Time());
 
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
@@ -3852,6 +3931,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
 bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -3966,7 +4048,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* ite
     }
 
     // WaitForSpellCast(spell);
-    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, bot->GetGUID(), time(nullptr));
+    aiObjectContext->GetValue<LastSpellCast&>("last spell cast")
+        ->Get()
+        .Set(spellId, bot->GetGUID(), SimulationClock::Time());
     aiObjectContext->GetValue<PositionMap&>("position")->Get()["random"].Reset();
 
     if (oldSel)
@@ -4069,6 +4153,9 @@ bool PlayerbotAI::CanCastVehicleSpell(uint32 spellId, Unit* target)
 
 bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -4188,8 +4275,8 @@ bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
 
     // WaitForSpellCast(spell);
 
-    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(), time(0));
-    // aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
+    // aiObjectContext->GetValue<LastSpellCast&>("last spell cast")->Get().Set(spellId, target->GetGUID(),
+    // SimulationClock::Time()); aiObjectContext->GetValue<botAI::PositionMap&>("position")->Get()["random"].Reset();
 
     if (HasStrategy("debug spell", BOT_STATE_NON_COMBAT))
     {
@@ -4556,6 +4643,17 @@ GuilderType PlayerbotAI::GetGuilderType()
 bool PlayerbotAI::HasPlayerNearby(WorldPosition* pos, float range)
 {
     float sqRange = range * range;
+    // A remote spectator is present at the camera target despite GM invisibility.
+    if (pos->sqDistance(WorldPosition(bot)) < sqRange)
+    {
+        for (Player const* observer : bot->GetSharedVisionList())
+        {
+            if (observer && observer->IsInWorld() && observer->IsGMSpectator() && observer->GetViewpoint() == bot &&
+                observer->GetSession() && !observer->GetSession()->IsSocketClosed())
+                return true;
+        }
+    }
+
     for (auto& player : sRandomPlayerbotMgr.GetPlayers())
     {
         if (!player->IsGameMaster() || player->isGMVisible())
@@ -4594,6 +4692,15 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
     // always allow packet handling (e.g. group invites, trade, loot, friend requests etc)
     if (activityType == PACKET_ACTIVITY)
         return true;
+
+    // An invisible GM watching this bot still needs full AI and movement updates.
+    // Shared vision is removed when the observer switches targets or stops watching.
+    for (Player const* observer : bot->GetSharedVisionList())
+    {
+        if (observer && observer->IsInWorld() && observer->IsGMSpectator() && observer->GetViewpoint() == bot &&
+            observer->GetSession() && !observer->GetSession()->IsSocketClosed())
+            return true;
+    }
 
     // all bots forced active, no rotation or scaling needed
     if (sPlayerbotAIConfig.botActiveAlone >= 100 && !sPlayerbotAIConfig.botActiveAloneSmartScale)
@@ -4767,6 +4874,9 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
 
 bool PlayerbotAI::AllowActivity(ActivityType activityType, bool checkNow)
 {
+    if (SimulationClock::Enabled())
+        return true;
+
     const int activityIndex = static_cast<int>(activityType);
 
     if (!allowActiveCheckTimer[activityIndex])
@@ -5187,6 +5297,9 @@ void PlayerbotAI::_fillGearScoreData(Player* player, Item* item, std::vector<uin
 
 std::string const PlayerbotAI::HandleRemoteCommand(std::string const command)
 {
+    if (IsExternallyControlled())
+        return "externally controlled";
+
     if (command == "state")
     {
         switch (currentState)
@@ -6002,6 +6115,9 @@ int32 PlayerbotAI::GetNearGroupMemberCount(float dis)
 
 bool PlayerbotAI::CanMove()
 {
+    if (IsExternallyControlled())
+        return false;
+
     // Most common checks: confused, stunned, fleeing, jumping, charging. All these
     // states are set when handling certain aura effects. We don't check against
     // UNIT_STATE_ROOT here, because this state is used by vehicles.
@@ -6798,8 +6914,20 @@ void PlayerbotAI::AddTimedEvent(std::function<void()> callback, uint32 delayMs)
         }
     };
 
-    // Every Player already owns an EventMap called m_Events
-    bot->m_Events.AddEvent(new LambdaEvent(std::move(callback)), bot->m_Events.CalculateTime(delayMs));
+    if (IsExternallyControlled())
+        return;
+    ObjectGuid guid = bot->GetGUID();
+    uint64 generation = GetExternalControlGeneration();
+    uint64 epoch = GetExternalControlEpoch();
+    auto guarded = [guid, generation, epoch, callback = std::move(callback)]
+    {
+        Player* player = ObjectAccessor::FindConnectedPlayer(guid);
+        PlayerbotAI* ai = player ? GET_PLAYERBOT_AI(player) : nullptr;
+        if (ai && !ai->IsExternallyControlled() && ai->GetExternalControlGeneration() == generation
+            && ai->GetExternalControlEpoch() == epoch)
+            callback();
+    };
+    bot->m_Events.AddEvent(new LambdaEvent(std::move(guarded)), bot->m_Events.CalculateTime(delayMs));
 }
 
 void PlayerbotAI::EvaluateHealerDpsStrategy()

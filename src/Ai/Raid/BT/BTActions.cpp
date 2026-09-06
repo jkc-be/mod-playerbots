@@ -5,11 +5,14 @@
  */
 
 #include "BTActions.h"
+
+#include <vector>
+
 #include "BTHelpers.h"
 #include "CreatureAI.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
-#include <vector>
+#include "SimulationClock.h"
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;
@@ -480,8 +483,7 @@ bool SupremusManagePhaseTimerAction::Execute(Event /*event*/)
     if (!supremus)
         return false;
 
-    supremusPhaseTimer.try_emplace(
-        supremus->GetMap()->GetInstanceId(), std::time(nullptr));
+    supremusPhaseTimer.try_emplace(supremus->GetMap()->GetInstanceId(), SimulationClock::Time());
 
     return false;
 }
@@ -933,7 +935,7 @@ bool GurtoggBloodboilManagePhaseTimerAction::Execute(Event /*event*/)
     if (!gurtogg)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const uint32 instanceId = gurtogg->GetMap()->GetInstanceId();
 
     if (gurtogg->HasAura(static_cast<uint32>(BlackTempleSpells::SPELL_BOSS_FEL_RAGE)))
@@ -1741,8 +1743,7 @@ bool IllidariCouncilManageDpsTimerAction::Execute(Event /*event*/)
 {
     if (Unit* gathios = AI_VALUE2(Unit*, "find target", "gathios the shatterer"))
     {
-        return councilDpsWaitTimer.try_emplace(
-            gathios->GetMap()->GetInstanceId(), std::time(nullptr)).second;
+        return councilDpsWaitTimer.try_emplace(gathios->GetMap()->GetInstanceId(), SimulationClock::Time()).second;
     }
 
     return false;
@@ -2884,7 +2885,7 @@ bool IllidanStormrageManageDpsTimerAndRtiAction::Execute(Event /*event*/)
     if (!illidan)
         return false;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const uint32 instanceId = illidan->GetMap()->GetInstanceId();
 
     bool updated = false;

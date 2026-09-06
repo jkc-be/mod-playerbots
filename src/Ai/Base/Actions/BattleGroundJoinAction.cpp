@@ -5,6 +5,7 @@
  */
 
 #include "BattleGroundJoinAction.h"
+
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
 #include "BattlegroundMgr.h"
@@ -13,6 +14,7 @@
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
+#include "SimulationClock.h"
 
 bool BGJoinAction::Execute(Event /*event*/)
 {
@@ -323,7 +325,7 @@ bool BGJoinAction::isUseful()
         return false;
 
     // do not try right after login (currently not working)
-    if ((time(nullptr) - bot->GetInGameTime()) < 120)
+    if ((SimulationClock::Time() - bot->GetInGameTime()) < 120)
         return false;
 
     // check level

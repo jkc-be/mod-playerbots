@@ -5,10 +5,12 @@
  */
 
 #include "SendMailAction.h"
+
 #include "ChatHelper.h"
 #include "Event.h"
 #include "ItemVisitors.h"
 #include "Mail.h"
+#include "Observatory.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 
@@ -101,7 +103,7 @@ bool SendMailAction::Execute(Event event)
 
         MailDraft draft("Money you asked for", body.str());
         draft.AddMoney(money);
-        bot->SetMoney(bot->GetMoney() - money);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(bot->GetMoney() - money));
         draft.SendMailTo(trans, MailReceiver(receiver), MailSender(bot));
 
         CharacterDatabase.CommitTransaction(trans);

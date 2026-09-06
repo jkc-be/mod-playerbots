@@ -5,15 +5,18 @@
  */
 
 #include "ReviveFromCorpseAction.h"
+
 #include "Corpse.h"
 #include "Event.h"
 #include "FleeManager.h"
 #include "GameGraveyard.h"
 #include "MapMgr.h"
+#include "Observatory.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "RandomPlayerbotMgr.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 bool ReviveFromCorpseAction::Execute(Event event)
 {
@@ -40,7 +43,7 @@ bool ReviveFromCorpseAction::Execute(Event event)
         return false;
 
     // if (corpse->GetGhostTime() + bot->GetCorpseReclaimDelay(corpse->GetType() == CORPSE_RESURRECTABLE_PVP) >
-    // time(nullptr))
+    // SimulationClock::Time())
     //     return false;
 
     if (groupLeader)
@@ -112,7 +115,7 @@ bool FindCorpseAction::Execute(Event /*event*/)
 
     float reclaimDist = CORPSE_RECLAIM_RADIUS - 5.0f;
     float corpseDist = botPos.distance(corpsePos);
-    int64 deadTime = time(nullptr) - corpse->GetGhostTime();
+    int64 deadTime = SimulationClock::Time() - corpse->GetGhostTime();
 
     bool moveToLeader = groupLeader && groupLeader != bot && leaderPos.fDist(corpsePos) < reclaimDist;
 
@@ -301,7 +304,7 @@ bool SpiritHealerAction::Execute(Event /*event*/)
     }
 
     uint32 dCount = AI_VALUE(uint32, "death count");
-    int64 deadTime = time(nullptr) - corpse->GetGhostTime();
+    int64 deadTime = SimulationClock::Time() - corpse->GetGhostTime();
 
     GraveyardStruct const* ClosestGrave =
         GetGrave(dCount > 10 || deadTime > 15 * MINUTE || AI_VALUE(uint8, "durability") < 10);
@@ -317,7 +320,7 @@ bool SpiritHealerAction::Execute(Event /*event*/)
                 LOG_DEBUG("playerbots", "Bot {} {}:{} <{}> revives at spirit healer", bot->GetGUID().ToString().c_str(),
                           bot->GetTeamId() == TEAM_ALLIANCE ? "A" : "H", bot->GetLevel(), bot->GetName());
                 PlayerbotChatHandler ch(bot);
-                bot->ResurrectPlayer(0.5f);
+                (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(0.5f));
                 bot->SpawnCorpseBones();
                 context->GetValue<Unit*>("current target")->Set(nullptr);
                 bot->SetTarget();

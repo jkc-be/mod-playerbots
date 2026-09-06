@@ -5,6 +5,10 @@
  */
 
 #include "BTMultipliers.h"
+
+#include <array>
+#include <ctime>
+
 #include "BTActions.h"
 #include "BTHelpers.h"
 #include "ChooseTargetActions.h"
@@ -17,9 +21,8 @@
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
+#include "SimulationClock.h"
 #include "WipeAction.h"
-#include <array>
-#include <ctime>
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;
@@ -410,7 +413,7 @@ float IllidariCouncilWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<IllidariCouncilMisdirectBossesToTanksAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 dpsWaitSeconds = 5;
 
     auto it = councilDpsWaitTimer.find(gathios->GetMap()->GetInstanceId());
@@ -614,7 +617,7 @@ float IllidanStormrageWaitForDpsMultiplier::GetValue(Action* action)
     if (dynamic_cast<IllidanStormrageMisdirectToTankAction*>(action))
         return 1.0f;
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const uint32 instanceId = illidan->GetMap()->GetInstanceId();
 
     int phase = GetIllidanPhase(illidan);

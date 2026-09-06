@@ -5,15 +5,18 @@
  */
 
 #include "SSCActions.h"
+
 #include "AiFactory.h"
 #include "Corpse.h"
 #include "EncounterHelpers.h"
 #include "LootAction.h"
 #include "LootObjectStack.h"
 #include "ObjectAccessor.h"
+#include "Observatory.h"
 #include "Playerbots.h"
 #include "RtiTargetValue.h"
 #include "SSCHelpers.h"
+#include "SimulationClock.h"
 
 using namespace SerpentShrineCavernHelpers;
 using namespace EncounterHelpers;
@@ -181,7 +184,7 @@ bool HydrossTheUnstablePositionFrostTankAction::Execute(Event /*event*/)
     if (!hydross->HasAura(SPELL_CORRUPTION) && HasMarkOfHydrossAt100Percent(bot) &&
         hydross->GetVictim() == bot && bot->IsWithinMeleeRange(hydross))
     {
-        const time_t now = std::time(nullptr);
+        const time_t now = SimulationClock::Time();
         auto it = hydrossChangeToNaturePhaseTimer.find(hydross->GetMap()->GetInstanceId());
 
         if (it != hydrossChangeToNaturePhaseTimer.end() && (now - it->second) >= 1)
@@ -263,7 +266,7 @@ bool HydrossTheUnstablePositionNatureTankAction::Execute(Event /*event*/)
     if (hydross->HasAura(SPELL_CORRUPTION) && HasMarkOfCorruptionAt100Percent(bot) &&
         hydross->GetVictim() == bot && bot->IsWithinMeleeRange(hydross))
     {
-        const time_t now = std::time(nullptr);
+        const time_t now = SimulationClock::Time();
         auto it = hydrossChangeToFrostPhaseTimer.find(hydross->GetMap()->GetInstanceId());
 
         if (it != hydrossChangeToFrostPhaseTimer.end() && (now - it->second) >= 1)
@@ -397,7 +400,7 @@ bool HydrossTheUnstableStopDpsUponPhaseChangeAction::Execute(Event /*event*/)
         return false;
 
     const uint32 instanceId = hydross->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     constexpr uint8 phaseStartStopSeconds = 5;
     constexpr uint8 phaseEndStopSeconds = 1;
 
@@ -443,7 +446,7 @@ bool HydrossTheUnstableManageTimersAction::Execute(Event /*event*/)
         return false;
 
     const uint32 instanceId = hydross->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     bool changed = false;
 
@@ -660,7 +663,7 @@ bool TheLurkerBelowManageSpoutTimerAction::Execute(Event /*event*/)
         return false;
 
     const uint32 instanceId = lurker->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     bool changed = false;
 
@@ -1049,7 +1052,7 @@ bool LeotherasTheBlindManageDpsWaitTimersAction::Execute(Event /*event*/)
         return false;
 
     const uint32 instanceId = leotheras->GetMap()->GetInstanceId();
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
 
     bool changed = false;
     // Encounter start/reset: clear all timers
@@ -1457,8 +1460,8 @@ bool FathomLordKarathressAssignDpsPriorityAction::Execute(Event /*event*/)
 bool FathomLordKarathressManageDpsTimerAction::Execute(Event /*event*/)
 {
     Unit* karathress = AI_VALUE2(Unit*, "find target", "fathom-lord karathress");
-    if (karathress && karathressDpsWaitTimer.try_emplace(
-        karathress->GetMap()->GetInstanceId(), std::time(nullptr)).second)
+    if (karathress &&
+        karathressDpsWaitTimer.try_emplace(karathress->GetMap()->GetInstanceId(), SimulationClock::Time()).second)
         return true;
 
     return false;
@@ -2088,7 +2091,7 @@ bool LadyVashjTeleportToTaintedElementalAction::Execute(Event /*event*/)
 
     if (bot->GetExactDist2d(tainted) < 5.0f)
     {
-        bot->SetFullHealth();
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetFullHealth"), bot->SetFullHealth());
         bot->RemoveAura(SPELL_POISON_BOLT);
     }
 
@@ -2140,7 +2143,7 @@ bool LadyVashjLootTaintedCoreAction::Execute(Event /*event*/)
     *packet << coreIndex;
     bot->GetSession()->QueuePacket(packet);
 
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     lastCoreInInventoryTime.insert_or_assign(bot->GetGUID(), now);
 
     return true;
@@ -2217,7 +2220,7 @@ bool LadyVashjPassTheTaintedCoreAction::Execute(Event /*event*/)
         if (bot == designatedLooter &&
             IsFirstCorePasserInPosition(firstCorePasser))
         {
-            const time_t now = std::time(nullptr);
+            const time_t now = SimulationClock::Time();
             auto it = lastImbueAttempt.find(instanceId);
             if (it == lastImbueAttempt.end() || (now - it->second) >= 2)
             {
@@ -2233,7 +2236,7 @@ bool LadyVashjPassTheTaintedCoreAction::Execute(Event /*event*/)
         else if (bot == firstCorePasser &&
                  IsSecondCorePasserInPosition(secondCorePasser))
         {
-            const time_t now = std::time(nullptr);
+            const time_t now = SimulationClock::Time();
             auto it = lastImbueAttempt.find(instanceId);
             if (it == lastImbueAttempt.end() || (now - it->second) >= 2)
             {
@@ -2250,7 +2253,7 @@ bool LadyVashjPassTheTaintedCoreAction::Execute(Event /*event*/)
         else if (bot == secondCorePasser && !UseCoreOnNearestGenerator(instanceId) &&
                  IsThirdCorePasserInPosition(thirdCorePasser))
         {
-            const time_t now = std::time(nullptr);
+            const time_t now = SimulationClock::Time();
             auto it = lastImbueAttempt.find(instanceId);
             if (it == lastImbueAttempt.end() || (now - it->second) >= 2)
             {
@@ -2267,7 +2270,7 @@ bool LadyVashjPassTheTaintedCoreAction::Execute(Event /*event*/)
         else if (bot == thirdCorePasser && !UseCoreOnNearestGenerator(instanceId) &&
                  IsFourthCorePasserInPosition(fourthCorePasser))
         {
-            const time_t now = std::time(nullptr);
+            const time_t now = SimulationClock::Time();
             auto it = lastImbueAttempt.find(instanceId);
             if (it == lastImbueAttempt.end() || (now - it->second) >= 2)
             {

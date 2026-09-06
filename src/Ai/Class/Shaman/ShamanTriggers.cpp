@@ -5,15 +5,18 @@
  */
 
 #include "ShamanTriggers.h"
+
+#include <ctime>
+
 #include "Creature.h"
 #include "InstanceScript.h"
 #include "ItemTemplate.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "TotemsShamanStrategy.h"
 #include "Unit.h"
-#include <ctime>
 
 bool MainHandWeaponNoImbueTrigger::IsActive()
 {
@@ -107,7 +110,7 @@ bool SpiritWalkTrigger::IsActive()
     constexpr uint32 SPIRIT_WALK_SPELL_ID = 58875u;
     constexpr int COOLDOWN_IN_SECONDS = 32;
 
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
 
     if ((now - lastSpiritWalkTime) < COOLDOWN_IN_SECONDS)
         return false;

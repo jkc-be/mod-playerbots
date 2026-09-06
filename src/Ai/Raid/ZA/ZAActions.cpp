@@ -5,8 +5,10 @@
  */
 
 #include "ZAActions.h"
+
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "ZAHelpers.h"
 
 using namespace ZulAmanHelpers;
@@ -113,7 +115,7 @@ bool AkilzonMoveToEyeOfTheStormAction::Execute(Event /*event*/)
 
 bool AkilzonManageElectricalStormTimerAction::Execute(Event /*event*/)
 {
-    const time_t now = std::time(nullptr);
+    const time_t now = SimulationClock::Time();
     const uint32 instanceId = bot->GetMap()->GetInstanceId();
 
     Unit* akilzon = AI_VALUE2(Unit*, "find target", "akil'zon");

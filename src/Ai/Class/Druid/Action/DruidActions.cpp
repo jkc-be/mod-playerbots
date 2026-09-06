@@ -5,10 +5,12 @@
  */
 
 #include "DruidActions.h"
+
 #include "AoeValues.h"
 #include "Event.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 #include "TargetValue.h"
 
 constexpr uint32 SPELL_ECLIPSE_SOLAR = 48517;
@@ -69,7 +71,7 @@ bool CastThornsOnMainTankAction::Execute(Event event)
 
 bool CastWrathAction::isUseful()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     time_t solarTime = context->GetValue<time_t>("eclipse solar proc time")->Get();
     time_t lunarTime = context->GetValue<time_t>("eclipse lunar proc time")->Get();
 
@@ -102,7 +104,7 @@ bool CastWrathAction::isUseful()
 
 bool CastStarfireAction::isUseful()
 {
-    time_t now = time(nullptr);
+    time_t now = SimulationClock::Time();
     time_t solarTime = context->GetValue<time_t>("eclipse solar proc time")->Get();
     time_t lunarTime = context->GetValue<time_t>("eclipse lunar proc time")->Get();
 

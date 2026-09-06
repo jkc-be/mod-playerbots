@@ -5,6 +5,14 @@
  */
 
 #include "RandomPlayerbotMgr.h"
+
+#include <algorithm>
+#include <boost/thread/thread.hpp>
+#include <cstdlib>
+#include <ctime>
+#include <iomanip>
+#include <random>
+
 #include "AiFactory.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
@@ -23,6 +31,7 @@
 #include "NewRpgInfo.h"
 #include "NewRpgStrategy.h"
 #include "ObjectGuid.h"
+#include "Observatory.h"
 #include "PerfMonitor.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
@@ -36,16 +45,11 @@
 #include "RandomPlayerbotFactory.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 #include "TravelMgr.h"
 #include "Unit.h"
 #include "World.h"
 #include "WorldSessionMgr.h"
-#include <algorithm>
-#include <boost/thread/thread.hpp>
-#include <cstdlib>
-#include <ctime>
-#include <iomanip>
-#include <random>
 
 struct GuidClassRaceInfo
 {
@@ -167,7 +171,38 @@ double botPIDImpl::calculate(double setpoint, double pv)
 
 botPIDImpl::~botPIDImpl() {}
 
-uint32 RandomPlayerbotMgr::GetMaxAllowedBotCount() { return GetEventValue(0, "bot_count"); }
+uint32 RandomPlayerbotMgr::GetMaxAllowedBotCount()
+{
+    return SimulationClock::Enabled() ? Observatory::TargetBotCount() : GetEventValue(0, "bot_count");
+}
+
+void RandomPlayerbotMgr::ReconcileObservatoryPopulation()
+{
+    if (!SimulationClock::Enabled())
+        return;
+
+    uint32 target = Observatory::TargetBotCount();
+    // Let outstanding asynchronous logins finish before choosing who to remove.
+    if (botLoading.empty() && currentBots.size() > target)
+    {
+        std::vector<uint32> candidates(currentBots.begin(), currentBots.end());
+        std::sort(candidates.rbegin(), candidates.rend());
+        for (uint32 id : candidates)
+        {
+            if (currentBots.size() <= target)
+                break;
+            if (Player* bot = GetPlayerBot(id))
+            {
+                Observatory::Event(bot, "population_logout", target, "operator target; character preserved");
+                LogoutPlayerBot(bot->GetGUID());
+            }
+            SetEventValue(id, "add", 0, 0);
+            SetEventValue(id, "logout", 0, 0);
+            currentBots.erase(id);
+        }
+    }
+    Observatory::PopulationSettled(botLoading.empty() && currentBots.size() == target && playerBots.size() == target);
+}
 
 void RandomPlayerbotMgr::LogPlayerLocation()
 {
@@ -295,9 +330,9 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
         ScaleBotActivity();
     }*/
 
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
-    if (!maxAllowedBotCount || (maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots ||
-                                maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
+    if (!SimulationClock::Enabled() && (!maxAllowedBotCount ||
+        maxAllowedBotCount < sPlayerbotAIConfig.minRandomBots || maxAllowedBotCount > sPlayerbotAIConfig.maxRandomBots))
     {
         maxAllowedBotCount = urand(sPlayerbotAIConfig.minRandomBots, sPlayerbotAIConfig.maxRandomBots);
         SetEventValue(0, "bot_count", maxAllowedBotCount,
@@ -335,12 +370,12 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
     {
         if (sWorldSessionMgr->GetActiveAndQueuedSessionCount() > 0)
         {
-            RealPlayerLastTimeSeen = time(nullptr);
+            RealPlayerLastTimeSeen = SimulationClock::Time();
             realPlayerIsLogged = true;
 
             if (DelayLoginBotsTimer == 0)
             {
-                DelayLoginBotsTimer = time(nullptr) + sPlayerbotAIConfig.disabledWithoutRealPlayerLoginDelay;
+                DelayLoginBotsTimer = SimulationClock::Time() + sPlayerbotAIConfig.disabledWithoutRealPlayerLoginDelay;
             }
         }
         else
@@ -351,7 +386,8 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
             }
 
             if (RealPlayerLastTimeSeen != 0 && onlineBotCount > 0 &&
-                time(nullptr) > RealPlayerLastTimeSeen + sPlayerbotAIConfig.disabledWithoutRealPlayerLogoutDelay)
+                SimulationClock::Time() >
+                    RealPlayerLastTimeSeen + sPlayerbotAIConfig.disabledWithoutRealPlayerLogoutDelay)
             {
                 LogoutAllBots();
                 LOG_INFO("playerbots", "Logout all bots due no real player session.");
@@ -360,7 +396,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
 
         if (availableBotCount < maxAllowedBotCount &&
             (sPlayerbotAIConfig.disabledWithoutRealPlayer == false ||
-             (realPlayerIsLogged && DelayLoginBotsTimer != 0 && time(nullptr) >= DelayLoginBotsTimer)))
+             (realPlayerIsLogged && DelayLoginBotsTimer != 0 && SimulationClock::Time() >= DelayLoginBotsTimer)))
         {
             AddRandomBots();
         }
@@ -372,28 +408,28 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
 
     if (sPlayerbotAIConfig.syncLevelWithPlayers && !players.empty())
     {
-        if (time(nullptr) > (PlayersCheckTimer + 60))
+        if (SimulationClock::Time() > (PlayersCheckTimer + 60))
             sRandomPlayerbotMgr.CheckPlayers();
     }
 
     if (sPlayerbotAIConfig.randomBotJoinBG /* && !players.empty()*/)
     {
-        if (time(nullptr) > (BgCheckTimer + 35))
+        if (SimulationClock::Time() > (BgCheckTimer + 35))
             sRandomPlayerbotMgr.CheckBgQueue();
     }
 
     if (sPlayerbotAIConfig.randomBotJoinLfg /* && !players.empty()*/)
     {
-        if (time(nullptr) > (LfgCheckTimer + 30))
+        if (SimulationClock::Time() > (LfgCheckTimer + 30))
             sRandomPlayerbotMgr.CheckLfgQueue();
     }
 
     if (sPlayerbotAIConfig.randomBotAutologin && sPlayerbotAIConfig.randomBotPrintStatsInterval &&
-        time(nullptr) > (printStatsTimer + sPlayerbotAIConfig.randomBotPrintStatsInterval))
+        SimulationClock::Time() > (printStatsTimer + sPlayerbotAIConfig.randomBotPrintStatsInterval))
     {
         if (!printStatsTimer)
         {
-            printStatsTimer = time(nullptr);
+            printStatsTimer = SimulationClock::Time();
         }
         else
         {
@@ -405,7 +441,7 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
     uint32 maxNewBots =
         onlineBotCount < maxAllowedBotCount &&
                 (sPlayerbotAIConfig.disabledWithoutRealPlayer == false ||
-                 (realPlayerIsLogged && DelayLoginBotsTimer != 0 && time(nullptr) >= DelayLoginBotsTimer))
+                 (realPlayerIsLogged && DelayLoginBotsTimer != 0 && SimulationClock::Time() >= DelayLoginBotsTimer))
             ? maxAllowedBotCount - onlineBotCount
             : 0;
     uint32 loginBots = std::min(sPlayerbotAIConfig.randomBotsPerInterval - updateBots, maxNewBots);
@@ -637,7 +673,7 @@ bool RandomPlayerbotMgr::IsAccountType(uint32 accountId, uint8 accountType)
 // Phase 4 is reached if and only if the value of RandomBotAccountCount is lower than it should.
 uint32 RandomPlayerbotMgr::AddRandomBots()
 {
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
     static time_t missingBotsTimer = 0;
 
     if (currentBots.size() < maxAllowedBotCount)
@@ -735,9 +771,8 @@ uint32 RandomPlayerbotMgr::AddRandomBots()
         // Lambda to handle bot login logic
         auto tryLoginBot = [&](CharacterInfo const& charInfo) -> bool
         {
-            if (GetEventValue(charInfo.guid, "add") ||
-                GetEventValue(charInfo.guid, "logout") ||
-                GetPlayerBot(charInfo.guid) ||
+            if (!Observatory::AllowsBot(charInfo.guid) || GetEventValue(charInfo.guid, "add") ||
+                GetEventValue(charInfo.guid, "logout") || GetPlayerBot(charInfo.guid) ||
                 currentBots.contains(charInfo.guid) ||
                 (sPlayerbotAIConfig.disableDeathKnightLogin && charInfo.rClass == CLASS_DEATH_KNIGHT))
             {
@@ -793,9 +828,9 @@ uint32 RandomPlayerbotMgr::AddRandomBots()
         if (maxAllowedBotCount)
         {
             if (missingBotsTimer == 0)
-                missingBotsTimer = time(nullptr);
+                missingBotsTimer = SimulationClock::Time();
 
-            if (time(nullptr) - missingBotsTimer >= 10)
+            if (SimulationClock::Time() - missingBotsTimer >= 10)
             {
                 int divisor = RandomPlayerbotFactory::CalculateAvailableCharsPerAccount();
                 uint32 moreAccountsNeeded = (maxAllowedBotCount + divisor - 1) / divisor;
@@ -893,17 +928,17 @@ void RandomPlayerbotMgr::CheckBgQueue()
 {
     if (!BgCheckTimer)
     {
-        BgCheckTimer = time(nullptr);
+        BgCheckTimer = SimulationClock::Time();
         return;  // Exit immediately after initializing the timer
     }
 
-    if (time(nullptr) < BgCheckTimer)
+    if (SimulationClock::Time() < BgCheckTimer)
     {
         return;  // No need to proceed if the current time is less than the timer
     }
 
     // Update the timer to the current time
-    BgCheckTimer = time(nullptr);
+    BgCheckTimer = SimulationClock::Time();
 
     LOG_DEBUG("playerbots", "Checking BG Queue...");
 
@@ -1250,8 +1285,8 @@ void RandomPlayerbotMgr::LogBattlegroundInfo()
 
 void RandomPlayerbotMgr::CheckLfgQueue()
 {
-    if (!LfgCheckTimer || time(nullptr) > (LfgCheckTimer + 30))
-        LfgCheckTimer = time(nullptr);
+    if (!LfgCheckTimer || SimulationClock::Time() > (LfgCheckTimer + 30))
+        LfgCheckTimer = SimulationClock::Time();
 
     LOG_DEBUG("playerbots", "Checking LFG Queue...");
 
@@ -1288,8 +1323,8 @@ void RandomPlayerbotMgr::CheckLfgQueue()
 
 void RandomPlayerbotMgr::CheckPlayers()
 {
-    if (!PlayersCheckTimer || time(nullptr) > (PlayersCheckTimer + 60))
-        PlayersCheckTimer = time(nullptr);
+    if (!PlayersCheckTimer || SimulationClock::Time() > (PlayersCheckTimer + 60))
+        PlayersCheckTimer = SimulationClock::Time();
 
     LOG_INFO("playerbots", "Checking Players...");
 
@@ -1337,8 +1372,10 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     ObjectGuid botGUID = ObjectGuid::Create<HighGuid::Player>(bot);
     Player* player = GetPlayerBot(botGUID);
     PlayerbotAI* botAI = player ? GET_PLAYERBOT_AI(player) : nullptr;
+    if (botAI && botAI->IsExternallyControlled())
+        return false;
 
-    uint32 isValid = GetEventValue(bot, "add");
+    uint32 isValid = SimulationClock::Enabled() ? 1 : GetEventValue(bot, "add");
     if (!isValid)
     {
         if (!player || !player->GetGroup())
@@ -1444,7 +1481,7 @@ bool RandomPlayerbotMgr::ProcessBot(Player* bot)
 {
 
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
-    if (!botAI)
+    if (!botAI || botAI->IsExternallyControlled())
         return false;
 
     if (bot->InBattleground())
@@ -1853,6 +1890,8 @@ void RandomPlayerbotMgr::RandomTeleport(Player* bot)
 
 void RandomPlayerbotMgr::Randomize(Player* bot)
 {
+    Observatory::Context observationContext("convenience:Randomize");
+    Observatory::Event(bot, "shortcut", 0, "Randomize");
     if (bot->InBattleground())
         return;
 
@@ -1898,6 +1937,8 @@ void RandomPlayerbotMgr::IncreaseLevel(Player* bot)
 
 void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 {
+    Observatory::Context observationContext("convenience:RandomizeFirst");
+    Observatory::Event(bot, "shortcut", 0, "RandomizeFirst");
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
     if (!botAI)
         return;
@@ -1993,6 +2034,8 @@ void RandomPlayerbotMgr::RandomizeFirst(Player* bot)
 
 void RandomPlayerbotMgr::RandomizeMin(Player* bot)
 {
+    Observatory::Context observationContext("convenience:RandomizeMin");
+    Observatory::Event(bot, "shortcut", 0, "RandomizeMin");
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
     if (!botAI)
         return;
@@ -2067,13 +2110,15 @@ uint32 RandomPlayerbotMgr::GetZoneLevel(uint16 mapId, float teleX, float teleY, 
 
 void RandomPlayerbotMgr::Refresh(Player* bot)
 {
+    Observatory::Context observationContext("convenience:Refresh");
+    Observatory::Event(bot, "shortcut", 0, "Refresh");
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
     if (!botAI)
         return;
 
     if (bot->isDead())
     {
-        bot->ResurrectPlayer(1.0f);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"), bot->ResurrectPlayer(1.0f));
         bot->SpawnCorpseBones();
         botAI->ResetStrategies(false);
     }
@@ -2091,19 +2136,22 @@ void RandomPlayerbotMgr::Refresh(Player* bot)
     botAI->Reset();
 
     bot->DurabilityRepairAll(false, 1.0f, false);
-    bot->SetFullHealth();
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetFullHealth"), bot->SetFullHealth());
     bot->SetPvP(sWorld->IsPvPRealm());
     PlayerbotFactory factory(bot, bot->GetLevel());
     factory.Refresh();
 
     if (bot->GetMaxPower(POWER_MANA) > 0)
-        bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+         bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA)));
 
     if (bot->GetMaxPower(POWER_ENERGY) > 0)
-        bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY));
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"),
+         bot->SetPower(POWER_ENERGY, bot->GetMaxPower(POWER_ENERGY)));
 
     uint32 money = bot->GetMoney();
-    bot->SetMoney(money + 500 * sqrt(urand(1, bot->GetLevel() * 5)));
+    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"),
+     bot->SetMoney(money + 500 * sqrt(urand(1, bot->GetLevel() * 5))));
 
     if (bot->GetGroup())
         botAI->LeaveOrDisbandGroup();
@@ -2183,21 +2231,21 @@ bool RandomPlayerbotMgr::IsAddclassBot(ObjectGuid::LowType bot)
 
 void RandomPlayerbotMgr::GetBots()
 {
-    if (!currentBots.empty())
+    if (!currentBots.empty() || (SimulationClock::Enabled() && !Observatory::TargetBotCount()))
         return;
 
     PlayerbotsDatabasePreparedStatement* stmt =
         PlayerbotsDatabase.GetPreparedStatement(PLAYERBOTS_SEL_RANDOM_BOTS_BY_OWNER_AND_EVENT);
     stmt->SetData(0, 0);
     stmt->SetData(1, "add");
-    uint32 maxAllowedBotCount = GetEventValue(0, "bot_count");
+    uint32 maxAllowedBotCount = GetMaxAllowedBotCount();
     if (PreparedQueryResult result = PlayerbotsDatabase.Query(stmt))
     {
         do
         {
             Field* fields = result->Fetch();
             uint32 bot = fields[0].Get<uint32>();
-            if (GetEventValue(bot, "add"))
+            if (Observatory::AllowsBot(bot) && GetEventValue(bot, "add"))
                 currentBots.insert(bot);
 
             if (currentBots.size() >= maxAllowedBotCount)
@@ -2683,7 +2731,7 @@ Player* RandomPlayerbotMgr::GetRandomPlayer()
 
 void RandomPlayerbotMgr::PrintStats()
 {
-    printStatsTimer = time(nullptr);
+    printStatsTimer = SimulationClock::Time();
     LOG_INFO("playerbots", "Random Bots Stats: {} online", playerBots.size());
 
     std::map<uint8, uint32> alliance, horde;

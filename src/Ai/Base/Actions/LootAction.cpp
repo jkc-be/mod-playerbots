@@ -5,6 +5,7 @@
  */
 
 #include "LootAction.h"
+
 #include "BroadcastHelper.h"
 #include "ChatHelper.h"
 #include "Event.h"
@@ -16,6 +17,7 @@
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SimulationClock.h"
 
 bool LootAction::Execute(Event /*event*/)
 {
@@ -326,7 +328,7 @@ uint32 stackCount = urand(1, proto->GetMaxStackSize());
     auctionEntry->bidder = 0;
     auctionEntry->bid = 0;
     auctionEntry->buyout = buyoutPrice;
-    auctionEntry->expireTime = time(nullptr) + auction_time;
+    auctionEntry->expireTime = SimulationClock::Time() + auction_time;
     //auctionEntry->moneyDeliveryTime = 0;
     auctionEntry->deposit = 0;
     auctionEntry->auctionHouseEntry = ahEntry;

@@ -5,6 +5,9 @@
  */
 
 #include "ChooseRpgTargetAction.h"
+
+#include <random>
+
 #include "BudgetValues.h"
 #include "ChatHelper.h"
 #include "Event.h"
@@ -14,7 +17,7 @@
 #include "PossibleRpgTargetsValue.h"
 #include "RpgSubActions.h"
 #include "ServerFacade.h"
-#include <random>
+#include "SimulationClock.h"
 
 bool ChooseRpgTargetAction::HasSameTarget(ObjectGuid guid, uint32 max, GuidVector const& nearGuids)
 {
@@ -244,7 +247,7 @@ bool ChooseRpgTargetAction::Execute(Event /*event*/)
         relevances.push_back(target.second);
     }
 
-    std::mt19937 gen(time(0));
+    std::mt19937 gen(SimulationClock::Time());
     TravelMgr::instance().weighted_shuffle(guidps.begin(), guidps.end(), relevances.begin(), relevances.end(), gen);
 
     GuidPosition guidP(guidps.front());

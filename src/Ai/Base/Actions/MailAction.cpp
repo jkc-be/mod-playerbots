@@ -5,10 +5,12 @@
  */
 
 #include "MailAction.h"
+
 #include "ChatHelper.h"
 #include "Event.h"
 #include "Mail.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 std::map<std::string, MailProcessor*> MailAction::processors;
 
@@ -25,7 +27,7 @@ public:
     bool Process(uint32 index, Mail* mail, PlayerbotAI* botAI) override
     {
         Player* bot = botAI->GetBot();
-        time_t cur_time = time(nullptr);
+        time_t cur_time = SimulationClock::Time();
         uint32 days = (cur_time - mail->deliver_time) / 3600 / 24;
 
         std::ostringstream out;
@@ -296,7 +298,7 @@ bool MailAction::Execute(Event event)
         return false;
 
     std::vector<Mail*> mailList;
-    time_t cur_time = time(nullptr);
+    time_t cur_time = SimulationClock::Time();
     for (PlayerMails::const_iterator itr = bot->GetMails().begin(); itr != bot->GetMails().end(); ++itr)
     {
         if ((*itr)->state == MAIL_STATE_DELETED || cur_time < (*itr)->deliver_time)

@@ -5,6 +5,7 @@
  */
 
 #include "UldBossHelper.h"
+
 #include "GameObject.h"
 #include "Group.h"
 #include "ObjectAccessor.h"
@@ -12,6 +13,7 @@
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "ScriptedCreature.h"
+#include "SimulationClock.h"
 #include "World.h"
 
 const Position ULDUAR_THORIM_NEAR_ARENA_CENTER = Position(2134.9854f, -263.11853f, 419.8465f);
@@ -104,7 +106,7 @@ bool RazorscaleBossHelper::IsHarpoonReady(GameObject* harpoonGO)
     auto it = _harpoonCooldowns.find(harpoonGO->GetGUID());
     if (it != _harpoonCooldowns.end())
     {
-        time_t currentTime = std::time(nullptr);
+        time_t currentTime = SimulationClock::Time();
         time_t elapsedTime = currentTime - it->second;
         if (elapsedTime < HARPOON_COOLDOWN_DURATION)
             return false;
@@ -118,7 +120,7 @@ void RazorscaleBossHelper::SetHarpoonOnCooldown(GameObject* harpoonGO)
     if (!harpoonGO)
         return;
 
-    time_t currentTime = std::time(nullptr);
+    time_t currentTime = SimulationClock::Time();
     _harpoonCooldowns[harpoonGO->GetGUID()] = currentTime;
 }
 
@@ -195,7 +197,7 @@ bool RazorscaleBossHelper::CanSwapRoles() const
     }
 
     // Compare the current time against the stored time
-    std::time_t currentTime = std::time(nullptr);
+    std::time_t currentTime = SimulationClock::Time();
     std::time_t lastSwapTime = it->second;
 
     return (currentTime - lastSwapTime) >= _roleSwapCooldown;
@@ -264,5 +266,5 @@ void RazorscaleBossHelper::AssignRolesBasedOnHealth()
         return;
 
     // Set current time in the cooldown map for this bot to start cooldown
-    _lastRoleSwapTime[botGuid] = std::time(nullptr);
+    _lastRoleSwapTime[botGuid] = SimulationClock::Time();
 }

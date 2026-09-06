@@ -7,12 +7,15 @@
 #ifndef PLAYERBOTS_VALUE_H
 #define PLAYERBOTS_VALUE_H
 
+#include <time.h>
+
+#include <unordered_map>
+
 #include "AiObject.h"
 #include "ObjectGuid.h"
+#include "SimulationClock.h"
 #include "Timer.h"
 #include "Unit.h"
-#include <time.h>
-#include <unordered_map>
 
 class PlayerbotAI;
 class Unit;
@@ -129,7 +132,7 @@ public:
 
     T Get() override
     {
-        time_t now = time(0);
+        time_t now = SimulationClock::Time();
         if (!this->lastCheckTime)
         {
             this->lastCheckTime = now;
@@ -147,18 +150,21 @@ public:
     MemoryCalculatedValue(PlayerbotAI* botAI, std::string const name = "value", int32 checkInterval = 1)
         : CalculatedValue<T>(botAI, name, checkInterval)
     {
-        lastChangeTime = time(0);
+        lastChangeTime = SimulationClock::Time();
     }
 
     virtual bool EqualToLast(T value) = 0;
-    virtual bool CanCheckChange() { return time(0) - lastChangeTime < minChangeInterval || EqualToLast(this->value); }
+    virtual bool CanCheckChange()
+    {
+        return SimulationClock::Time() - lastChangeTime < minChangeInterval || EqualToLast(this->value);
+    }
 
     virtual bool UpdateChange()
     {
         if (CanCheckChange())
             return false;
 
-        lastChangeTime = time(0);
+        lastChangeTime = SimulationClock::Time();
         lastValue = this->value;
         return true;
     }
@@ -185,12 +191,12 @@ public:
         return lastChangeTime;
     }
 
-    uint32 LastChangeDelay() { return time(0) - LastChangeOn(); }
+    uint32 LastChangeDelay() { return SimulationClock::Time() - LastChangeOn(); }
 
     void Reset() override
     {
         CalculatedValue<T>::Reset();
-        lastChangeTime = time(0);
+        lastChangeTime = SimulationClock::Time();
     }
 
 protected:
@@ -213,7 +219,7 @@ public:
         if (MemoryCalculatedValue<T>::UpdateChange())
             return false;
 
-        valueLog.push_back(std::make_pair(this->value, time(0)));
+        valueLog.push_back(std::make_pair(this->value, SimulationClock::Time()));
 
         if (valueLog.size() > logLength)
             valueLog.pop_front();

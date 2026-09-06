@@ -14,11 +14,13 @@
  */
 
 #include "PullTriggers.h"
+
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
 #include "PullStrategy.h"
+#include "SimulationClock.h"
 
 bool PullStartTrigger::IsActive()
 {
@@ -37,7 +39,7 @@ bool PullEndTrigger::IsActive()
     if (!target || !target->IsInWorld() || !target->IsAlive())
         return true;
 
-    time_t const secondsSincePullStarted = time(nullptr) - strategy->GetPullStartTime();
+    time_t const secondsSincePullStarted = SimulationClock::Time() - strategy->GetPullStartTime();
     if (secondsSincePullStarted >= PullStrategy::GetMaxPullTime())
         return true;
 

@@ -5,15 +5,17 @@
  */
 
 #include "LootObjectStack.h"
+
 #include "LootMgr.h"
 #include "Object.h"
 #include "ObjectAccessor.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 #include "Unit.h"
 
 #define MAX_LOOT_OBJECT_COUNT 200
 
-LootTarget::LootTarget(ObjectGuid guid) : guid(guid), asOfTime(time(nullptr)) {}
+LootTarget::LootTarget(ObjectGuid guid) : guid(guid), asOfTime(SimulationClock::Time()) {}
 
 LootTarget::LootTarget(LootTarget const& other)
 {
@@ -352,7 +354,7 @@ bool LootObjectStack::Add(ObjectGuid guid)
 {
     if (availableLoot.size() >= MAX_LOOT_OBJECT_COUNT)
     {
-        availableLoot.shrink(time(nullptr) - 30);
+        availableLoot.shrink(SimulationClock::Time() - 30);
     }
 
     if (availableLoot.size() >= MAX_LOOT_OBJECT_COUNT)
@@ -389,7 +391,7 @@ LootObject LootObjectStack::GetLoot(float maxDistance)
 
 LootObject LootObjectStack::GetNearest(float maxDistance)
 {
-    availableLoot.shrink(time(nullptr) - 30);
+    availableLoot.shrink(SimulationClock::Time() - 30);
 
     LootObject nearest;
     float nearestDistance = std::numeric_limits<float>::max();

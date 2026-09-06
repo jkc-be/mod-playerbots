@@ -5,10 +5,12 @@
  */
 
 #include "SellAction.h"
+
 #include "Event.h"
 #include "ItemPackets.h"
 #include "ItemUsageValue.h"
 #include "ItemVisitors.h"
+#include "Observatory.h"
 #include "Playerbots.h"
 
 class SellItemsVisitor : public IterateItemsVisitor
@@ -124,7 +126,7 @@ void SellAction::Sell(Item* item)
 
         if (botAI->HasCheat(BotCheatMask::gold))
         {
-            bot->SetMoney(botMoney);
+            (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetMoney"), bot->SetMoney(botMoney));
         }
 
         out << "Selling " << chat->FormatItem(item->GetTemplate());

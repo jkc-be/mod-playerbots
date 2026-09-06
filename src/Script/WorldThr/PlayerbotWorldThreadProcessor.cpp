@@ -5,9 +5,14 @@
  */
 
 #include "PlayerbotWorldThreadProcessor.h"
-#include "Log.h"
-#include "Timer.h"
+
 #include <algorithm>
+
+#include "Log.h"
+#include "ObjectAccessor.h"
+#include "Observatory.h"
+#include "Playerbots.h"
+#include "Timer.h"
 
 void PlayerbotWorldThreadProcessor::Update(uint32 diff)
 {
@@ -43,6 +48,7 @@ bool PlayerbotWorldThreadProcessor::QueueOperation(std::unique_ptr<PlayerbotOper
     // Check if queue is full
     if (m_operationQueue.size() >= m_maxQueueSize)
     {
+        Observatory::Fail("bot_operation_queue_overflow");
         LOG_ERROR("playerbots",
                   "PlayerbotWorldThreadProcessor queue is full ({} operations). Dropping operation: {}",
                   m_maxQueueSize, operation->GetName());
@@ -63,6 +69,22 @@ bool PlayerbotWorldThreadProcessor::QueueOperation(std::unique_ptr<PlayerbotOper
     }
 
     return true;
+}
+
+void PlayerbotWorldThreadProcessor::CancelForBot(ObjectGuid guid)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+    std::queue<std::unique_ptr<PlayerbotOperation>> retained;
+    while (!m_operationQueue.empty())
+    {
+        auto operation = std::move(m_operationQueue.front());
+        m_operationQueue.pop();
+        if (operation->GetBotGuid() != guid)
+            retained.push(std::move(operation));
+    }
+    m_operationQueue.swap(retained);
+    std::lock_guard<std::mutex> statsLock(m_statsMutex);
+    m_stats.currentQueueSize = static_cast<uint32>(m_operationQueue.size());
 }
 
 void PlayerbotWorldThreadProcessor::ProcessBatch()
@@ -95,8 +117,10 @@ void PlayerbotWorldThreadProcessor::ProcessBatch()
 
         try
         {
-            // Check if operation is still valid
-            if (!operation->IsValid())
+            Player* bot = ObjectAccessor::FindConnectedPlayer(operation->GetBotGuid());
+            PlayerbotAI* ai = bot ? GET_PLAYERBOT_AI(bot) : nullptr;
+            // Ownership may have changed since a map worker queued this operation.
+            if ((ai && ai->IsExternallyControlled()) || !operation->IsValid())
             {
                 LOG_DEBUG("playerbots", "Skipping invalid operation: {}", operation->GetName());
 
@@ -106,12 +130,12 @@ void PlayerbotWorldThreadProcessor::ProcessBatch()
             }
 
             // Time the execution
-            uint32 startTime = getMSTime();
+            uint32 startTime = getRealMSTime();
 
             // Execute the operation
             bool success = operation->Execute();
 
-            uint32 executionTime = GetMSTimeDiffToNow(startTime);
+            uint32 executionTime = GetRealMSTimeDiffToNow(startTime);
             totalExecutionTime += executionTime;
 
             // Log slow operations

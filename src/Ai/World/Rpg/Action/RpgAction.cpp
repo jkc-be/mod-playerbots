@@ -5,6 +5,9 @@
  */
 
 #include "RpgAction.h"
+
+#include <random>
+
 #include "ChatHelper.h"
 #include "EmoteAction.h"
 #include "Event.h"
@@ -12,7 +15,7 @@
 #include "Playerbots.h"
 #include "RpgSubActions.h"
 #include "ServerFacade.h"
-#include <random>
+#include "SimulationClock.h"
 
 bool RpgAction::Execute(Event /*event*/)
 {
@@ -126,7 +129,7 @@ bool RpgAction::SetNextRpgAction()
         }
     }
 
-    std::mt19937 gen(time(0));
+    std::mt19937 gen(SimulationClock::Time());
 
     TravelMgr::instance().weighted_shuffle(actions.begin(), actions.end(), relevances.begin(), relevances.end(), gen);
 

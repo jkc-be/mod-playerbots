@@ -5,11 +5,13 @@
  */
 
 #include "UseMeetingStoneAction.h"
+
 #include "CellImpl.h"
 #include "Event.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
 #include "NearestGameObjects.h"
+#include "Observatory.h"
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
@@ -223,7 +225,8 @@ bool SummonAction::Teleport(Player* summoner, Player* player, bool preserveAuras
 
                 if (bot->isDead() && revive)
                 {
-                    bot->ResurrectPlayer(1.0f, false);
+                    (Observatory::Event(bot, "shortcut", 0, "bot_mutation:ResurrectPlayer"),
+                     bot->ResurrectPlayer(1.0f, false));
                     bot->SpawnCorpseBones();
                     botAI->TellMasterNoFacing(PlayerbotTextMgr::instance().GetBotTextOrDefault(
                         "meeting_stone_revived", "I live, again!", {}));

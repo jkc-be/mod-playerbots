@@ -369,6 +369,7 @@ public:
     void OnUpdate(uint32 diff) override
     {
         PlayerbotWorldThreadProcessor::instance().Update(diff);
+        sRandomPlayerbotMgr.ReconcileObservatoryPopulation();
         sRandomPlayerbotMgr.UpdateAI(diff);  // World thread only
     }
 };

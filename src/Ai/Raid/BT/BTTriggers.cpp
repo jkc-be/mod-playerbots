@@ -5,12 +5,14 @@
  */
 
 #include "BTTriggers.h"
+
 #include "AiFactory.h"
 #include "BTActions.h"
 #include "BTHelpers.h"
 #include "EncounterHelpers.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
+#include "SimulationClock.h"
 
 using namespace BlackTempleHelpers;
 using namespace EncounterHelpers;
@@ -128,7 +130,7 @@ bool SupremusPullingBossOrChangingPhaseTrigger::IsActive()
     if (it == supremusPhaseTimer.end())
         return false;
 
-    const time_t now = time(nullptr);
+    const time_t now = SimulationClock::Time();
     const time_t elapsed = now - it->second;
 
     // Active during first 10 seconds, or during 60-70, 120-130, etc.
@@ -275,7 +277,7 @@ bool GurtoggBloodboilPullingBossTrigger::IsActive()
     if (it == gurtoggPhaseTimer.end())
         return false;
 
-    const time_t elapsed = std::time(nullptr) - it->second;
+    const time_t elapsed = SimulationClock::Time() - it->second;
     return elapsed < 10;
 }
 

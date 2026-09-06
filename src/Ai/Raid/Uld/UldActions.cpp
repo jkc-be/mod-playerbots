@@ -5,6 +5,9 @@
  */
 
 #include "UldActions.h"
+
+#include <cmath>
+
 #include "AiObjectContext.h"
 #include "CombatStrategy.h"
 #include "DBCEnums.h"
@@ -13,6 +16,7 @@
 #include "Group.h"
 #include "LastMovementValue.h"
 #include "ObjectGuid.h"
+#include "Observatory.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
@@ -26,7 +30,6 @@
 #include "UldScripts.h"
 #include "Unit.h"
 #include "Vehicle.h"
-#include <cmath>
 
 const std::string ADD_STRATEGY_CHAR = "+";
 const std::string REMOVE_STRATEGY_CHAR = "-";
@@ -2482,7 +2485,7 @@ bool VezaxCheatAction::Execute(Event /*event*/)
     // Restore bot's mana to full
     uint32 maxMana = bot->GetMaxPower(POWER_MANA);
     if (maxMana > 0)
-        bot->SetPower(POWER_MANA, maxMana);
+        (Observatory::Event(bot, "shortcut", 0, "bot_mutation:SetPower"), bot->SetPower(POWER_MANA, maxMana));
 
     return true;
 }

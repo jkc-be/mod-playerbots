@@ -5,10 +5,12 @@
  */
 
 #include "ConserveManaStrategy.h"
+
 #include "GenericSpellActions.h"
 #include "LastSpellCastValue.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
+#include "SimulationClock.h"
 
 // float ConserveManaMultiplier::GetValue(Action* action)
 // {
@@ -77,7 +79,7 @@
 //     if (!lastCastTime)
 //         return 1.0f;
 
-//     time_t elapsed = time(nullptr) - lastCastTime;
+//     time_t elapsed = SimulationClock::Time() - lastCastTime;
 //     if ((double)elapsed < 10 * saveLevel)
 //         return 0.0f;
 
