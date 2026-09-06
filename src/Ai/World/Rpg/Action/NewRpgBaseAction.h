@@ -67,12 +67,11 @@ protected:
     /* FOR MOVE FAR */
     const float pathFinderDis = 70.0f;
     // Time without real progress toward dest before MoveFarTo
-    // falls back to teleport recovery. Kept short enough that a
+    // gives up. With OriginalTravel the bot idles and picks a new
+    // destination; otherwise it teleports. Kept short enough that a
     // bot truly oscillating around an unreachable destination
-    // (mmap returning non-progressing partial paths, or NOPATH +
-    // cone fallback wandering) doesn't spin for 5 minutes before
-    // the teleport fires, but long enough that a genuine long
-    // walk that is slowly making progress never triggers it.
+    // doesn't spin for 5 minutes, but long enough that a genuine
+    // long walk that is slowly making progress never triggers it.
     const uint32 stuckTime = 90 * 1000;
 };
 

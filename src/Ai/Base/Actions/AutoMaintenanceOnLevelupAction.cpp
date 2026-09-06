@@ -27,6 +27,9 @@ void AutoMaintenanceOnLevelupAction::AutoTeleportForLevel()
     if (!sPlayerbotAIConfig.autoTeleportForLevel || !sRandomPlayerbotMgr.IsRandomBot(bot))
         return;
 
+    if (sPlayerbotAIConfig.originalTravel)
+        return;
+
     if (botAI->HasGameClientMaster())
         return;
 

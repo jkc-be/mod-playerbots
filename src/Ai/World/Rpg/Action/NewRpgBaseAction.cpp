@@ -96,13 +96,24 @@ bool NewRpgBaseAction::MoveFarTo(WorldPosition dest)
     }
     else if (++botAI->rpgInfo.stuckAttempts >= 5 && GetMSTimeDiffToNow(botAI->rpgInfo.stuckTs) >= stuckTime)
     {
-        // No meaningful progress toward dest for `stuckTime`: fall
-        // back to teleporting directly so the bot can get on with
-        // its RPG objective instead of oscillating indefinitely.
+        // No meaningful progress toward dest for `stuckTime`.
         botAI->rpgInfo.stuckTs = getMSTime();
         botAI->rpgInfo.stuckAttempts = 0;
         AreaTableEntry const* entry = sAreaTableStore.LookupEntry(bot->GetZoneId());
         std::string zone_name = PlayerbotAI::GetLocalizedAreaName(entry);
+        if (sPlayerbotAIConfig.originalTravel)
+        {
+            LOG_DEBUG(
+                "playerbots",
+                "[New RPG] {} gave up unreachable dest ({},{},{},{}) without teleport - Zone: {} ({})",
+                bot->GetName(), dest.GetPositionX(), dest.GetPositionY(), dest.GetPositionZ(), dest.GetMapId(),
+                bot->GetZoneId(), zone_name);
+            botAI->rpgInfo.ChangeToIdle();
+            return true;
+        }
+
+        // Fall back to teleporting so the bot can get on with its RPG objective
+        // instead of oscillating indefinitely.
         LOG_DEBUG(
             "playerbots",
             "[New RPG] Teleport {} from ({},{},{},{}) to ({},{},{},{}) as it stuck when moving far - Zone: {} ({})",
