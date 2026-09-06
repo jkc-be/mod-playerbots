@@ -4561,6 +4561,18 @@ GuilderType PlayerbotAI::GetGuilderType()
 bool PlayerbotAI::HasPlayerNearby(WorldPosition* pos, float range)
 {
     float sqRange = range * range;
+    // A remote spectator is present at the camera target despite GM invisibility.
+    if (pos->sqDistance(WorldPosition(bot)) < sqRange)
+    {
+        for (Player const* observer : bot->GetSharedVisionList())
+        {
+            if (observer && observer->IsInWorld() && observer->IsGMSpectator() &&
+                observer->GetViewpoint() == bot && observer->GetSession() &&
+                !observer->GetSession()->IsSocketClosed())
+                return true;
+        }
+    }
+
     for (auto& player : sRandomPlayerbotMgr.GetPlayers())
     {
         if (!player->IsGameMaster() || player->isGMVisible())
@@ -4599,6 +4611,16 @@ bool PlayerbotAI::AllowActive(ActivityType activityType)
     // always allow packet handling (e.g. group invites, trade, loot, friend requests etc)
     if (activityType == PACKET_ACTIVITY)
         return true;
+
+    // An invisible GM watching this bot still needs full AI and movement updates.
+    // Shared vision is removed when the observer switches targets or stops watching.
+    for (Player const* observer : bot->GetSharedVisionList())
+    {
+        if (observer && observer->IsInWorld() && observer->IsGMSpectator() &&
+            observer->GetViewpoint() == bot && observer->GetSession() &&
+            !observer->GetSession()->IsSocketClosed())
+            return true;
+    }
 
     // all bots forced active, no rotation or scaling needed
     if (sPlayerbotAIConfig.botActiveAlone >= 100 && !sPlayerbotAIConfig.botActiveAloneSmartScale)
