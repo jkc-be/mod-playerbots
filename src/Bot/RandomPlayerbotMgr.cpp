@@ -1372,6 +1372,8 @@ bool RandomPlayerbotMgr::ProcessBot(uint32 bot)
     ObjectGuid botGUID = ObjectGuid::Create<HighGuid::Player>(bot);
     Player* player = GetPlayerBot(botGUID);
     PlayerbotAI* botAI = player ? GET_PLAYERBOT_AI(player) : nullptr;
+    if (botAI && botAI->IsExternallyControlled())
+        return false;
 
     uint32 isValid = SimulationClock::Enabled() ? 1 : GetEventValue(bot, "add");
     if (!isValid)
@@ -1479,7 +1481,7 @@ bool RandomPlayerbotMgr::ProcessBot(Player* bot)
 {
 
     PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
-    if (!botAI)
+    if (!botAI || botAI->IsExternallyControlled())
         return false;
 
     if (bot->InBattleground())

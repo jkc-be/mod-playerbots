@@ -265,6 +265,12 @@ void PlayerbotHolder::HandleBotPackets(WorldSession* session)
     WorldPacket* packet;
     while (session->GetPacketQueue().next(packet))
     {
+        PlayerbotAI* ai = GET_PLAYERBOT_AI(session->GetPlayer());
+        if (ai && ai->IsExternallyControlled())
+        {
+            delete packet;
+            continue;
+        }
         OpcodeClient opcode = static_cast<OpcodeClient>(packet->GetOpcode());
         ClientOpcodeHandler const* opHandle = opcodeTable[opcode];
         if (!opHandle)

@@ -36,6 +36,7 @@
 #include "MotionMaster.h"
 #include "MoveSplineInit.h"
 #include "NewRpgStrategy.h"
+#include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
 #include "Observatory.h"
@@ -44,6 +45,7 @@
 #include "PlayerbotAIConfig.h"
 #include "PlayerbotGuildMgr.h"
 #include "PlayerbotMgr.h"
+#include "PlayerbotWorldThreadProcessor.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
 #include "PositionValue.h"
@@ -247,8 +249,33 @@ PlayerbotAI::~PlayerbotAI()
         PlayerbotsMgr::instance().RemovePlayerBotData(bot->GetGUID(), true);
 }
 
+void PlayerbotAI::SetExternalControl(bool enabled)
+{
+    if (externalControl.exchange(enabled) == enabled)
+        return;
+    ++externalControlEpoch;
+    // A headless bot can become a selfbot during login. Never clear a real client's packets or movement.
+    if (!bot || !bot->GetSession() || IsSelfBot(bot))
+        return;
+    chatCommands.clear();
+    chatReplies.clear();
+    botOutgoingPacketHandlers.Clear();
+    masterIncomingPacketHandlers.Clear();
+    masterOutgoingPacketHandlers.Clear();
+    PlayerbotWorldThreadProcessor::instance().CancelForBot(bot->GetGUID());
+    WorldPacket* packet = nullptr;
+    while (bot->GetSession()->GetPacketQueue().next(packet))
+        delete packet;
+    // Reset cached decisions at both boundaries. Teleport/session maintenance remains enabled.
+    Reset(true);
+    bot->StopMoving();
+    bot->CombatStopWithPets(true);
+}
+
 void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
 {
+    if (IsExternallyControlled())
+        return;
     Observatory::Event(bot, "ai_update");
     // Handle the AI check delay
     if (nextAICheckDelay > elapsed)
@@ -480,6 +507,8 @@ void PlayerbotAI::UpdateAIGroupMaster()
 
 void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal)
 {
+    if (IsExternallyControlled())
+        return;
 
     if (!bot || !bot->GetSession())
         return;
@@ -567,6 +596,9 @@ void PlayerbotAI::UpdateAIInternal([[maybe_unused]] uint32 elapsed, bool minimal
 
 void PlayerbotAI::HandleCommands()
 {
+    if (IsExternallyControlled())
+        return;
+
     ExternalEventHelper helper(aiObjectContext);
 
     for (auto it = chatCommands.begin(); it != chatCommands.end();)
@@ -606,6 +638,9 @@ void PlayerbotAI::HandleCommands()
 std::map<std::string, ChatMsg> chatMap;
 void PlayerbotAI::HandleCommand(uint32 type, std::string const& text, Player& fromPlayer, const uint32 lang)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (!bot)
         return;
 
@@ -956,6 +991,9 @@ bool PlayerbotAI::IsAllowedCommand(std::string const text)
 
 void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fromPlayer)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (!GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, type != CHAT_MSG_WHISPER, fromPlayer))
         return;
 
@@ -1124,6 +1162,9 @@ void PlayerbotAI::HandleCommand(uint32 type, std::string const text, Player* fro
 
 void PlayerbotAI::HandleBotOutgoingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     if (packet.empty())
         return;
 
@@ -1431,11 +1472,17 @@ int32 PlayerbotAI::CalculateGlobalCooldown(uint32 spellid)
 
 void PlayerbotAI::HandleMasterIncomingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     masterIncomingPacketHandlers.AddPacket(packet);
 }
 
 void PlayerbotAI::HandleMasterOutgoingPacket(WorldPacket const& packet)
 {
+    if (IsExternallyControlled())
+        return;
+
     masterOutgoingPacketHandlers.AddPacket(packet);
 }
 
@@ -1802,6 +1849,9 @@ bool PlayerbotAI::HasTargetExclusions() const
 
 bool PlayerbotAI::DoSpecificAction(std::string const name, Event event, bool silent, std::string const qualifier)
 {
+    if (IsExternallyControlled())
+        return false;
+
     std::ostringstream out;
 
     for (uint8 i = 0; i < BOT_STATE_MAX; i++)
@@ -3299,11 +3349,17 @@ bool PlayerbotAI::HasAnyAuraOf(Unit* player, ...)
 
 bool PlayerbotAI::CanCastSpell(std::string const name, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     return CanCastSpell(aiObjectContext->GetValue<uint32>("spell id", name)->Get(), target, true, itemTarget);
 }
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell, Item* itemTarget, Item* castItem)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
     {
         if (!sPlayerbotAIConfig.logInGroupOnly || (bot->GetGroup() && HasGameClientMaster()))
@@ -3462,6 +3518,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, Unit* target, bool checkHasSpell,
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, bool checkHasSpell)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
         return false;
 
@@ -3520,6 +3579,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, GameObject* goTarget, bool checkH
 
 bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, bool checkHasSpell, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellid)
         return false;
 
@@ -3569,6 +3631,9 @@ bool PlayerbotAI::CanCastSpell(uint32 spellid, float x, float y, float z, bool c
 
 bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!IsValidUnit(target))
         return false;
 
@@ -3583,6 +3648,9 @@ bool PlayerbotAI::CastSpell(std::string const name, Unit* target, Item* itemTarg
 
 bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -3863,6 +3931,9 @@ bool PlayerbotAI::CastSpell(uint32 spellId, Unit* target, Item* itemTarget)
 
 bool PlayerbotAI::CastSpell(uint32 spellId, float x, float y, float z, Item* itemTarget)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -4082,6 +4153,9 @@ bool PlayerbotAI::CanCastVehicleSpell(uint32 spellId, Unit* target)
 
 bool PlayerbotAI::CastVehicleSpell(uint32 spellId, Unit* target)
 {
+    if (IsExternallyControlled())
+        return false;
+
     if (!spellId)
         return false;
 
@@ -5223,6 +5297,9 @@ void PlayerbotAI::_fillGearScoreData(Player* player, Item* item, std::vector<uin
 
 std::string const PlayerbotAI::HandleRemoteCommand(std::string const command)
 {
+    if (IsExternallyControlled())
+        return "externally controlled";
+
     if (command == "state")
     {
         switch (currentState)
@@ -6038,6 +6115,9 @@ int32 PlayerbotAI::GetNearGroupMemberCount(float dis)
 
 bool PlayerbotAI::CanMove()
 {
+    if (IsExternallyControlled())
+        return false;
+
     // Most common checks: confused, stunned, fleeing, jumping, charging. All these
     // states are set when handling certain aura effects. We don't check against
     // UNIT_STATE_ROOT here, because this state is used by vehicles.
@@ -6834,8 +6914,20 @@ void PlayerbotAI::AddTimedEvent(std::function<void()> callback, uint32 delayMs)
         }
     };
 
-    // Every Player already owns an EventMap called m_Events
-    bot->m_Events.AddEvent(new LambdaEvent(std::move(callback)), bot->m_Events.CalculateTime(delayMs));
+    if (IsExternallyControlled())
+        return;
+    ObjectGuid guid = bot->GetGUID();
+    uint64 generation = GetExternalControlGeneration();
+    uint64 epoch = GetExternalControlEpoch();
+    auto guarded = [guid, generation, epoch, callback = std::move(callback)]
+    {
+        Player* player = ObjectAccessor::FindConnectedPlayer(guid);
+        PlayerbotAI* ai = player ? GET_PLAYERBOT_AI(player) : nullptr;
+        if (ai && !ai->IsExternallyControlled() && ai->GetExternalControlGeneration() == generation
+            && ai->GetExternalControlEpoch() == epoch)
+            callback();
+    };
+    bot->m_Events.AddEvent(new LambdaEvent(std::move(guarded)), bot->m_Events.CalculateTime(delayMs));
 }
 
 void PlayerbotAI::EvaluateHealerDpsStrategy()

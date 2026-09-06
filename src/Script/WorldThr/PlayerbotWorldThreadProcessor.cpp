@@ -9,7 +9,9 @@
 #include <algorithm>
 
 #include "Log.h"
+#include "ObjectAccessor.h"
 #include "Observatory.h"
+#include "Playerbots.h"
 #include "Timer.h"
 
 void PlayerbotWorldThreadProcessor::Update(uint32 diff)
@@ -69,6 +71,22 @@ bool PlayerbotWorldThreadProcessor::QueueOperation(std::unique_ptr<PlayerbotOper
     return true;
 }
 
+void PlayerbotWorldThreadProcessor::CancelForBot(ObjectGuid guid)
+{
+    std::lock_guard<std::mutex> lock(m_queueMutex);
+    std::queue<std::unique_ptr<PlayerbotOperation>> retained;
+    while (!m_operationQueue.empty())
+    {
+        auto operation = std::move(m_operationQueue.front());
+        m_operationQueue.pop();
+        if (operation->GetBotGuid() != guid)
+            retained.push(std::move(operation));
+    }
+    m_operationQueue.swap(retained);
+    std::lock_guard<std::mutex> statsLock(m_statsMutex);
+    m_stats.currentQueueSize = static_cast<uint32>(m_operationQueue.size());
+}
+
 void PlayerbotWorldThreadProcessor::ProcessBatch()
 {
     // Extract a batch of operations from the queue
@@ -99,8 +117,10 @@ void PlayerbotWorldThreadProcessor::ProcessBatch()
 
         try
         {
-            // Check if operation is still valid
-            if (!operation->IsValid())
+            Player* bot = ObjectAccessor::FindConnectedPlayer(operation->GetBotGuid());
+            PlayerbotAI* ai = bot ? GET_PLAYERBOT_AI(bot) : nullptr;
+            // Ownership may have changed since a map worker queued this operation.
+            if ((ai && ai->IsExternallyControlled()) || !operation->IsValid())
             {
                 LOG_DEBUG("playerbots", "Skipping invalid operation: {}", operation->GetName());
 
