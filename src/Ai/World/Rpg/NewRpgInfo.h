@@ -12,6 +12,8 @@
 #include "ObjectMgr.h"
 #include "QuestDef.h"
 #include "QuestObjectiveControl.h"
+#include "BodyControl.h"
+#include "BodyTravel.h"
 #include "Strategy.h"
 #include "Timer.h"
 #include "TravelMgr.h"
@@ -98,6 +100,8 @@ struct NewRpgInfo
     >;
     RpgData data;
     QuestObjectiveControl objectiveControl;
+    BodyControl body;
+    BodyTravel bodyTravel;
 
     NewRpgStatus GetStatus();
     static NewRpgStatus StatusFromString(std::string const& name);

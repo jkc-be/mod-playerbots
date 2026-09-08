@@ -39,6 +39,8 @@
 
 bool NewRpgBaseAction::MoveFarTo(WorldPosition dest)
 {
+    if (botAI->rpgInfo.body.Attached())
+        return MoveBodyTo(dest);
     if (dest == WorldPosition())
         return false;
 
@@ -323,6 +325,9 @@ bool NewRpgBaseAction::InteractWithNpcOrGameObjectForQuest(ObjectGuid guid)
     for (uint8 idx = 0; idx < menu.GetMenuItemCount(); idx++)
     {
         QuestMenuItem const& item = menu.GetItem(idx);
+        auto const& control = botAI->rpgInfo.objectiveControl;
+        if (botAI->rpgInfo.body.Attached() && control.quest && item.QuestId != control.quest)
+            continue;
         Quest const* quest = sObjectMgr->GetQuestTemplate(item.QuestId);
         if (!quest)
             continue;
@@ -599,6 +604,8 @@ bool NewRpgBaseAction::IsQuestCapableDoing(Quest const* quest)
 
 bool NewRpgBaseAction::OrganizeQuestLog()
 {
+    if (botAI->rpgInfo.body.Attached())
+        return false; // Quest abandonment is a brain decision, never inventory housekeeping.
     int32 freeSlotNum = 0;
 
     for (uint16 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
@@ -803,6 +810,9 @@ bool NewRpgBaseAction::HasQuestToAcceptOrReward(WorldObject* object)
     for (uint8 idx = 0; idx < menu.GetMenuItemCount(); idx++)
     {
         QuestMenuItem const& item = menu.GetItem(idx);
+        auto const& control = botAI->rpgInfo.objectiveControl;
+        if (botAI->rpgInfo.body.Attached() && control.quest && item.QuestId != control.quest)
+            continue;
         Quest const* quest = sObjectMgr->GetQuestTemplate(item.QuestId);
         if (!quest)
             continue;
@@ -815,6 +825,9 @@ bool NewRpgBaseAction::HasQuestToAcceptOrReward(WorldObject* object)
     for (uint8 idx = 0; idx < menu.GetMenuItemCount(); idx++)
     {
         QuestMenuItem const& item = menu.GetItem(idx);
+        auto const& control = botAI->rpgInfo.objectiveControl;
+        if (botAI->rpgInfo.body.Attached() && control.quest && item.QuestId != control.quest)
+            continue;
         Quest const* quest = sObjectMgr->GetQuestTemplate(item.QuestId);
         if (!quest)
             continue;

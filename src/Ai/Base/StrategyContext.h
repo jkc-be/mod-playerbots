@@ -37,6 +37,7 @@
 #include "MoveFromGroupStrategy.h"
 #include "NamedObjectContext.h"
 #include "NewRpgStrategy.h"
+#include "BodyMaintenanceStrategy.h"
 #include "NonCombatStrategy.h"
 #include "PassiveStrategy.h"
 #include "PullStrategy.h"
@@ -72,6 +73,7 @@ public:
         creators["food"] = &StrategyContext::food;
         creators["chat"] = &StrategyContext::chat;
         creators["default"] = &StrategyContext::world_packet;
+        creators["body maintenance"] = [](PlayerbotAI* ai) -> Strategy* { return new BodyMaintenanceStrategy(ai); };
         creators["ready check"] = &StrategyContext::ready_check;
         creators["force rebuff"] = &StrategyContext::force_rebuff;
         creators["dead"] = &StrategyContext::dead;

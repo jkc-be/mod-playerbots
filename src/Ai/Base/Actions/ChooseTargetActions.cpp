@@ -87,6 +87,11 @@ bool DropTargetAction::Execute(Event /*event*/)
 
 bool AttackAnythingAction::Execute(Event event)
 {
+    auto const& body = botAI->rpgInfo.body;
+    auto const& control = botAI->rpgInfo.objectiveControl;
+    if (!bot->IsInCombat() && !body.MayStartQuestCombat(control.token,
+        control.phase == QuestObjectiveControl::Phase::Attempting, getMSTime()))
+        return false;
     if (botAI->rpgInfo.objectiveControl.cooperationHold && !bot->IsInCombat())
         return false; // A cached grind target must not start a pull while the party is gathering or supporting.
     bool result = AttackAction::Execute(event);
@@ -108,7 +113,7 @@ bool AttackAnythingAction::isUseful()
     if (!bot || !botAI)  // Prevents invalid accesses
         return false;
 
-    if (!botAI->AllowActivity(GRIND_ACTIVITY))  // Bot cannot be active
+    if (!botAI->rpgInfo.body.Attached() && !botAI->AllowActivity(GRIND_ACTIVITY))  // Bot cannot be active
         return false;
 
     if (botAI->HasStrategy("stay", BOT_STATE_NON_COMBAT))

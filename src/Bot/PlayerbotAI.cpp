@@ -236,6 +236,7 @@ PlayerbotAI::PlayerbotAI(Player* bot)
 
 PlayerbotAI::~PlayerbotAI()
 {
+    delete bodyEngine;
     for (uint8 i = 0; i < BOT_STATE_MAX; i++)
     {
         if (engines[i])
@@ -1585,9 +1586,10 @@ void PlayerbotAI::DoNextAction(bool min)
         }
     }
 
-    bool minimal = !this->AllowActivity();
+    bool minimal = !rpgInfo.body.Attached() && !this->AllowActivity();
 
-    currentEngine->DoNextAction(nullptr, 0, (minimal || min));
+    if (!DoBodyAction())
+        currentEngine->DoNextAction(nullptr, 0, (minimal || min));
 
     if (minimal)
     {
@@ -1946,6 +1948,8 @@ Strategy* PlayerbotAI::GetStrategy(std::string const name, BotState type)
 
 void PlayerbotAI::ResetStrategies(bool /*load*/)
 {
+    delete bodyEngine;
+    bodyEngine = nullptr;
     for (uint8 i = 0; i < BOT_STATE_MAX; i++)
         engines[i]->removeAllStrategies();
 

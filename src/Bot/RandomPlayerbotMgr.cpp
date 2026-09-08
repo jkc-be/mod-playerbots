@@ -183,14 +183,18 @@ void RandomPlayerbotMgr::ReconcileObservatoryPopulation()
 
     uint32 target = Observatory::TargetBotCount();
     // Let outstanding asynchronous logins finish before choosing who to remove.
-    if (botLoading.empty() && currentBots.size() > target)
+    if (botLoading.empty())
     {
         std::vector<uint32> candidates(currentBots.begin(), currentBots.end());
-        std::sort(candidates.rbegin(), candidates.rend());
+        std::sort(candidates.begin(), candidates.end(), [](uint32 left, uint32 right)
+        {
+            bool leftAllowed = Observatory::AllowsBot(left), rightAllowed = Observatory::AllowsBot(right);
+            return leftAllowed != rightAllowed ? !leftAllowed : left > right;
+        });
         for (uint32 id : candidates)
         {
-            if (currentBots.size() <= target)
-                break;
+            if (currentBots.size() <= target && Observatory::AllowsBot(id))
+                continue;
             if (Player* bot = GetPlayerBot(id))
             {
                 Observatory::Event(bot, "population_logout", target, "operator target; character preserved");

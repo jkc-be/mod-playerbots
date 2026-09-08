@@ -502,7 +502,8 @@ Engine* AiFactory::createCombatEngine(Player* player, PlayerbotAI* const facade,
     return engine;
 }
 
-void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const facade, Engine* nonCombatEngine)
+void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const facade, Engine* nonCombatEngine,
+    bool body)
 {
     uint8 tab = GetPlayerSpecTab(player);
 
@@ -577,6 +578,16 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
         default:
             nonCombatEngine->addStrategy("dps assist", false);
             break;
+    }
+
+    if (body)
+    {
+        // Class maintenance remains a practiced skill. Pulls and autonomous work belong to the attached brain.
+        nonCombatEngine->removeStrategy("dps assist", false);
+        nonCombatEngine->removeStrategy("tank assist", false);
+        nonCombatEngine->removeStrategy("pull", false);
+        nonCombatEngine->addStrategiesNoInit("body maintenance", "food", "buff", "cure", "potions", nullptr);
+        return;
     }
 
     if (!player->InBattleground())

@@ -82,6 +82,8 @@ void NewRpgInfo::Reset()
     // Reset invalidates execution ownership; semantic intentions are reconciled by their owner.
     objectiveControl.Release(objectiveControl.token);
     objectiveControl.plannerAttached = false;
+    body = {};
+    bodyTravel = {};
     data = Idle{};
     startT = getMSTime();
 }

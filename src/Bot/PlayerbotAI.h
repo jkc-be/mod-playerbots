@@ -644,6 +644,8 @@ protected:
     uint32 accountId;
     AiObjectContext* aiObjectContext;
     Engine* currentEngine;
+    Engine* bodyEngine = nullptr;
+    bool DoBodyAction();
     Engine* engines[BOT_STATE_MAX];
     BotState currentState;
     ChatHelper chatHelper;

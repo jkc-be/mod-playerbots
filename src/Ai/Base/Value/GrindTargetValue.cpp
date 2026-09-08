@@ -82,6 +82,8 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
                 return found->second;
             return needForQuestMap.emplace(entry, needForQuest(unit)).first->second;
         };
+        if (botAI->rpgInfo.body.Attached() && !neededForQuest())
+            continue; // The body may execute quest combat, but cannot invent an independent XP-grinding goal.
         // Outleveling a creature removes its XP reward, not the owner's remaining quest credit or loot.
         if (!bot->isHonorOrXPTarget(unit) && (!unit->IsCreature() || !neededForQuest()))
             continue;

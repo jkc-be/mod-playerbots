@@ -27,12 +27,69 @@
 #include "QuestDef.h"
 #include "Random.h"
 #include "SharedDefines.h"
+#include "LootMgr.h"
 #include "Timer.h"
 #include "TravelMgr.h"
 #include "WaypointMovementGenerator.h"
 #include "G3D/Vector2.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
+
+namespace
+{
+WorldPosition BodyQuestAnchor(Player& bot, Quest const& quest, int32 objective, WorldPosition const& marker)
+{
+    // Quest-map polygons describe an area, not a walkable surface: their centroid may be above a cave.
+    // Reuse the body's existing objective/drop data, confined to that marker's vicinity. Only the physical
+    // approach point changes; these spawn coordinates are never taught to the brain as personal knowledge.
+    int32 const entry = objective >= 0 && objective < QUEST_OBJECTIVES_COUNT
+        ? quest.RequiredNpcOrGo[objective] : 0;
+    bool const items = objective >= QUEST_OBJECTIVES_COUNT
+        && objective < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT;
+    if (!entry && !items)
+        return marker;
+    WorldPosition result = marker;
+    float nearest = 1500.0f;
+    auto nearby = [&](auto const& spawn)
+    {
+        return spawn.mapid == bot.GetMapId() && (spawn.phaseMask & bot.GetPhaseMask())
+            && std::hypot(spawn.posX - marker.GetPositionX(), spawn.posY - marker.GetPositionY()) <= 200.0f;
+    };
+    auto consider = [&](auto const& spawn)
+    {
+        WorldPosition const position = GuidPosition(spawn);
+        float const distance = bot.GetDistance(position);
+        if (distance < nearest)
+        {
+            nearest = distance;
+            result = position;
+        }
+    };
+    auto creatureMatches = [&](uint32 candidate)
+    {
+        if (!candidate)
+            return false;
+        if (entry > 0 && candidate == uint32(entry))
+            return true;
+        auto const* definition = items ? sObjectMgr->GetCreatureTemplate(candidate) : nullptr;
+        // This is the same accepted-quest loot predicate used by the existing tactical target selector.
+        return definition && LootTemplates_Creature.HaveQuestLootForPlayer(definition->lootid, &bot);
+    };
+    for (auto const& [id, spawn] : sObjectMgr->GetAllCreatureData())
+        if (nearby(spawn) && (creatureMatches(spawn.id) || creatureMatches(spawn.id2) || creatureMatches(spawn.id3)))
+            consider(spawn);
+    for (auto const& [id, spawn] : sObjectMgr->GetAllGOData())
+        if (nearby(spawn))
+        {
+            auto const* definition = items ? sObjectMgr->GetGameObjectTemplate(spawn.id) : nullptr;
+            if ((entry < 0 && spawn.id == uint32(-entry)) || (definition
+                && LootTemplates_Gameobject.HaveQuestLootForPlayer(definition->GetLootId(), &bot)))
+                consider(spawn);
+        }
+    return result;
+}
+}
 
 void TellRpgStatusAction::WhisperStatusChange(Player* owner, std::string const& statusName)
 {
@@ -370,13 +427,15 @@ bool NewRpgGoCampAction::Execute(Event /*event*/)
             return true;
         }
     }
-    if (SearchQuestGiverAndAcceptOrReward())
+    if (!botAI->rpgInfo.body.Attached() && SearchQuestGiverAndAcceptOrReward())
         return true;
 
     if (auto* data = std::get_if<NewRpgInfo::GoCamp>(&botAI->rpgInfo.data))
     {
         if (MoveFarTo(data->pos))
             return true;
+        if (botAI->rpgInfo.body.Attached())
+            return false;
         return MoveRandomNear(10.0f);
     }
 
@@ -537,9 +596,18 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
             botAI->rpgInfo.ChangeToIdle();
             return true;
         }
-        uint32 rndIdx = urand(0, poiInfo.size() - 1);
-        G3D::Vector2 nearestPoi = poiInfo[rndIdx].pos;
-        int32 objectiveIdx = poiInfo[rndIdx].objectiveIdx;
+        uint32 index;
+        if (botAI->rpgInfo.body.Attached())
+            index = uint32(std::distance(poiInfo.begin(), std::min_element(poiInfo.begin(), poiInfo.end(),
+                [&](POIInfo const& left, POIInfo const& right)
+                {
+                    return bot->GetExactDist2d(left.pos.x, left.pos.y)
+                        < bot->GetExactDist2d(right.pos.x, right.pos.y);
+                })));
+        else
+            index = urand(0, poiInfo.size() - 1);
+        G3D::Vector2 nearestPoi = poiInfo[index].pos;
+        int32 objectiveIdx = poiInfo[index].objectiveIdx;
 
         float dx = nearestPoi.x, dy = nearestPoi.y;
 
@@ -556,7 +624,8 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
 
         WorldPosition pos(bot->GetMapId(), dx, dy, dz);
         data.lastReachPOI = 0;
-        data.pos = pos;
+        data.pos = botAI->rpgInfo.body.Attached()
+            ? BodyQuestAnchor(*bot, *data.quest, objectiveIdx, pos) : pos;
         data.objectiveIdx = objectiveIdx;
     }
 
@@ -566,6 +635,8 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
             botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::Traveling;
         if (MoveFarTo(data.pos))
             return true;
+        if (botAI->rpgInfo.body.Attached())
+            return false;
         // Long-range sampler couldn't land a candidate — nudge the
         // bot a short distance so the next tick retries from a
         // different position instead of sitting idle.
@@ -673,6 +744,8 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
             botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::Traveling;
         if (MoveFarTo(data.pos))
             return true;
+        if (botAI->rpgInfo.body.Attached())
+            return false;
         return MoveRandomNear(10.0f);
     }
 
