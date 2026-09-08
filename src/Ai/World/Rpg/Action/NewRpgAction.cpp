@@ -234,6 +234,8 @@ bool StartRpgDoQuestAction::Execute(Event event)
 bool NewRpgStatusUpdateAction::Execute(Event /*event*/)
 {
     NewRpgInfo& info = botAI->rpgInfo;
+    if (info.objectiveControl.token || info.objectiveControl.plannerAttached)
+        return false;
     NewRpgStatus status = info.GetStatus();
     switch (status)
     {
@@ -334,6 +336,8 @@ bool NewRpgStatusUpdateAction::Execute(Event /*event*/)
 
 bool NewRpgGoGrindAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.cooperationHold)
+        return false;
     if (SearchQuestGiverAndAcceptOrReward())
         return true;
     if (auto* data = std::get_if<NewRpgInfo::GoGrind>(&botAI->rpgInfo.data))
@@ -351,6 +355,21 @@ bool NewRpgGoGrindAction::Execute(Event /*event*/)
 
 bool NewRpgGoCampAction::Execute(Event /*event*/)
 {
+    auto& control = botAI->rpgInfo.objectiveControl;
+    if (control.cooperationHold)
+        return false;
+    if (control.token && control.failure != QuestObjectiveControl::Failure::None)
+        return false;
+    if (control.token && control.place)
+    {
+        control.phase = QuestObjectiveControl::Phase::Traveling;
+        if (bot->GetAreaId() == control.place)
+        {
+            botAI->rpgInfo.ChangeToWanderNpc();
+            control.phase = QuestObjectiveControl::Phase::Attempting;
+            return true;
+        }
+    }
     if (SearchQuestGiverAndAcceptOrReward())
         return true;
 
@@ -366,6 +385,8 @@ bool NewRpgGoCampAction::Execute(Event /*event*/)
 
 bool NewRpgWanderRandomAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.cooperationHold)
+        return false;
     if (SearchQuestGiverAndAcceptOrReward())
         return true;
 
@@ -375,6 +396,17 @@ bool NewRpgWanderRandomAction::Execute(Event /*event*/)
 bool NewRpgWanderNpcAction::Execute(Event /*event*/)
 {
     NewRpgInfo& info = botAI->rpgInfo;
+    auto& control = info.objectiveControl;
+    if (control.cooperationHold)
+        return false;
+    if (control.token && control.place)
+    {
+        if (control.failure != QuestObjectiveControl::Failure::None)
+            return false;
+        control.phase = QuestObjectiveControl::Phase::Attempting;
+        if (SearchQuestGiverAndAcceptOrReward())
+            return true;
+    }
     auto* dataPtr = std::get_if<NewRpgInfo::WanderNpc>(&info.data);
     if (!dataPtr)
         return false;
@@ -385,6 +417,8 @@ bool NewRpgWanderNpcAction::Execute(Event /*event*/)
         ObjectGuid npcOrGo = ChooseNpcOrGameObjectToInteract();
         if (npcOrGo.IsEmpty())
         {
+            if (control.token && control.place)
+                return MoveRandomNear(25.0f);
             info.ChangeToIdle();
             return true;
         }
@@ -410,6 +444,8 @@ bool NewRpgWanderNpcAction::Execute(Event /*event*/)
         // has reached the npc for more than `npcStayTime`, select the next target
         data.npcOrGo = ObjectGuid();
         data.lastReach = 0;
+        if (control.token && control.place)
+            return MoveRandomNear(30.0f);
     }
     else
     {
@@ -426,6 +462,11 @@ bool NewRpgWanderNpcAction::Execute(Event /*event*/)
 
 bool NewRpgDoQuestAction::Execute(Event /*event*/)
 {
+    auto const& control = botAI->rpgInfo.objectiveControl;
+    if (control.cooperationHold)
+        return control.cooperativeTurnIn && SearchQuestGiverAndAcceptOrReward();
+    if (control.token && control.failure != QuestObjectiveControl::Failure::None)
+        return false;
     if (SearchQuestGiverAndAcceptOrReward())
         return true;
 
@@ -435,6 +476,8 @@ bool NewRpgDoQuestAction::Execute(Event /*event*/)
         return false;
     auto& data = *dataPtr;
     uint32 questId = data.questId;
+    if (control.token && !control.Owns(questId))
+        return false;
     uint8 questStatus = bot->GetQuestStatus(questId);
     switch (questStatus)
     {
@@ -460,12 +503,13 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
         QuestStatusData const& q_status = bot->getQuestStatusMap().at(questId);
         bool completed = true;
-        if (currentObjective < QUEST_OBJECTIVES_COUNT)
+        if (currentObjective >= 0 && currentObjective < QUEST_OBJECTIVES_COUNT)
         {
             if (q_status.CreatureOrGOCount[currentObjective] < quest->RequiredNpcOrGoCount[currentObjective])
                 completed = false;
         }
-        else if (currentObjective < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT)
+        else if (currentObjective >= QUEST_OBJECTIVES_COUNT
+            && currentObjective < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT)
         {
             if (q_status.ItemCount[currentObjective - QUEST_OBJECTIVES_COUNT] <
                 quest->RequiredItemCount[currentObjective - QUEST_OBJECTIVES_COUNT])
@@ -484,6 +528,11 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
         std::vector<POIInfo> poiInfo;
         if (!GetQuestPOIPosAndObjectiveIdx(questId, poiInfo))
         {
+            if (botAI->rpgInfo.objectiveControl.Owns(questId))
+            {
+                botAI->rpgInfo.objectiveControl.Fail(QuestObjectiveControl::Failure::MissingLocation);
+                return false;
+            }
             // can't find a poi pos to go, stop doing quest for now
             botAI->rpgInfo.ChangeToIdle();
             return true;
@@ -499,7 +548,11 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
 
         // double check for GetQuestPOIPosAndObjectiveIdx
         if (dz == INVALID_HEIGHT || dz == VMAP_INVALID_HEIGHT_VALUE)
+        {
+            if (botAI->rpgInfo.objectiveControl.Owns(questId))
+                botAI->rpgInfo.objectiveControl.Fail(QuestObjectiveControl::Failure::Navigation);
             return false;
+        }
 
         WorldPosition pos(bot->GetMapId(), dx, dy, dz);
         data.lastReachPOI = 0;
@@ -509,6 +562,8 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
 
     if (bot->GetDistance(data.pos) > 10.0f && !data.lastReachPOI)
     {
+        if (botAI->rpgInfo.objectiveControl.Owns(questId))
+            botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::Traveling;
         if (MoveFarTo(data.pos))
             return true;
         // Long-range sampler couldn't land a candidate — nudge the
@@ -519,30 +574,29 @@ bool NewRpgDoQuestAction::DoIncompleteQuest(NewRpgInfo::DoQuest& data)
     // Now we are near the quest objective
     // kill mobs and looting quest should be done automatically by grind strategy
 
+    if (botAI->rpgInfo.objectiveControl.Owns(questId))
+        botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::Attempting;
+
+    auto const& questStatus = bot->getQuestStatusMap().at(questId);
+    int32 const index = data.objectiveIdx;
+    uint32 const credit = index >= 0 && index < QUEST_OBJECTIVES_COUNT
+        ? questStatus.CreatureOrGOCount[index]
+        : index >= QUEST_OBJECTIVES_COUNT && index < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT
+            ? questStatus.ItemCount[index - QUEST_OBJECTIVES_COUNT] : 0;
+
     if (!data.lastReachPOI)
     {
         data.lastReachPOI = getMSTime();
+        data.creditAtCheckpoint = credit;
         return true;
     }
+    // Owned objectives account for active attempt time separately from travel/recovery in their runtime.
+    if (botAI->rpgInfo.objectiveControl.Owns(questId))
+        return MoveRandomNear(8.0f);
     // stayed at this POI for more than 5 minutes
     if (GetMSTimeDiffToNow(data.lastReachPOI) >= poiStayTime)
     {
-        bool hasProgression = false;
-        int32 currentObjective = data.objectiveIdx;
-        // check if the objective has progression
-        Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
-        QuestStatusData const& q_status = bot->getQuestStatusMap().at(questId);
-        if (currentObjective < QUEST_OBJECTIVES_COUNT)
-        {
-            if (q_status.CreatureOrGOCount[currentObjective] != 0 && quest->RequiredNpcOrGoCount[currentObjective])
-                hasProgression = true;
-        }
-        else if (currentObjective < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT)
-        {
-            if (q_status.ItemCount[currentObjective - QUEST_OBJECTIVES_COUNT] != 0 &&
-                quest->RequiredItemCount[currentObjective - QUEST_OBJECTIVES_COUNT])
-                hasProgression = true;
-        }
+        bool const hasProgression = credit > data.creditAtCheckpoint;
         if (!hasProgression)
         {
             // we has reach the poi for more than 5 mins but no progession
@@ -581,6 +635,11 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
         std::vector<POIInfo> poiInfo;
         if (!GetQuestPOIPosAndObjectiveIdx(questId, poiInfo, true))
         {
+            if (botAI->rpgInfo.objectiveControl.Owns(questId))
+            {
+                botAI->rpgInfo.objectiveControl.Fail(QuestObjectiveControl::Failure::MissingLocation);
+                return false;
+            }
             // can't find a poi pos to reward, stop doing quest for now
             botAI->rpgInfo.ChangeToIdle();
             return false;
@@ -593,7 +652,11 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
 
         // double check for GetQuestPOIPosAndObjectiveIdx
         if (dz == INVALID_HEIGHT || dz == VMAP_INVALID_HEIGHT_VALUE)
+        {
+            if (botAI->rpgInfo.objectiveControl.Owns(questId))
+                botAI->rpgInfo.objectiveControl.Fail(QuestObjectiveControl::Failure::Navigation);
             return false;
+        }
 
         WorldPosition pos(bot->GetMapId(), dx, dy, dz);
         data.lastReachPOI = 0;
@@ -606,6 +669,8 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
 
     if (bot->GetDistance(data.pos) > 10.0f && !data.lastReachPOI)
     {
+        if (botAI->rpgInfo.objectiveControl.Owns(questId))
+            botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::Traveling;
         if (MoveFarTo(data.pos))
             return true;
         return MoveRandomNear(10.0f);
@@ -613,6 +678,11 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
 
     // Now we are near the qoi of reward
     // the quest should be rewarded by SearchQuestGiverAndAcceptOrReward
+    if (botAI->rpgInfo.objectiveControl.Owns(questId))
+    {
+        botAI->rpgInfo.objectiveControl.phase = QuestObjectiveControl::Phase::TurnIn;
+        return false;
+    }
     if (!data.lastReachPOI)
     {
         data.lastReachPOI = getMSTime();
@@ -634,6 +704,8 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
 
 bool NewRpgTravelFlightAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.cooperationHold)
+        return false;
     NewRpgInfo& info = botAI->rpgInfo;
     auto* dataPtr = std::get_if<NewRpgInfo::TravelFlight>(&info.data);
     if (!dataPtr)

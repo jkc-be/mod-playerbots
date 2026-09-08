@@ -47,6 +47,9 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
         return unit;
     }
 
+    if (botAI->rpgInfo.objectiveControl.cooperationHold)
+        return nullptr; // Keep ordinary defensive targeting above; cooperation chooses when to start new pulls.
+
     GuidVector targets = *context->GetValue<GuidVector>("possible targets");
     if (targets.empty())
         return nullptr;
@@ -71,7 +74,16 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
         if (!bot->IsHostileTo(unit) && unit->GetNpcFlags() != UNIT_NPC_FLAG_NONE)
             continue;
 
-        if (!bot->isHonorOrXPTarget(unit))
+        auto neededForQuest = [&]
+        {
+            auto const entry = unit->GetEntry();
+            auto const found = needForQuestMap.find(entry);
+            if (found != needForQuestMap.end())
+                return found->second;
+            return needForQuestMap.emplace(entry, needForQuest(unit)).first->second;
+        };
+        // Outleveling a creature removes its XP reward, not the owner's remaining quest credit or loot.
+        if (!bot->isHonorOrXPTarget(unit) && (!unit->IsCreature() || !neededForQuest()))
             continue;
 
         if (abs(bot->GetPositionZ() - unit->GetPositionZ()) > INTERACTION_DISTANCE)
@@ -113,10 +125,7 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
         bool outOfAggro = unit->ToCreature() && bot->GetDistance(unit) > aggroRange;
         if (inactiveGrindStatus && outOfAggro)
         {
-            if (needForQuestMap.find(unit->GetEntry()) == needForQuestMap.end())
-                needForQuestMap[unit->GetEntry()] = needForQuest(unit);
-
-            if (!needForQuestMap[unit->GetEntry()])
+            if (!neededForQuest())
                 continue;
         }
 

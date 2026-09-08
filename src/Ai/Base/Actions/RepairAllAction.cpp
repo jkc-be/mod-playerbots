@@ -13,6 +13,9 @@
 
 bool RepairAllAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.plannerAttached && botAI->rpgInfo.objectiveControl.cooperationHold
+        && !botAI->HasGameClientMaster())
+        return false;
     GuidVector npcs = AI_VALUE(GuidVector, "nearest npcs");
     for (ObjectGuid const guid : npcs)
     {

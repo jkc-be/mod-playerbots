@@ -96,6 +96,11 @@ bool NewRpgBaseAction::MoveFarTo(WorldPosition dest)
     }
     else if (++botAI->rpgInfo.stuckAttempts >= 5 && GetMSTimeDiffToNow(botAI->rpgInfo.stuckTs) >= stuckTime)
     {
+        if (botAI->rpgInfo.objectiveControl.token || botAI->rpgInfo.objectiveControl.plannerAttached)
+        {
+            botAI->rpgInfo.objectiveControl.Fail(QuestObjectiveControl::Failure::Navigation);
+            return false;
+        }
         // No meaningful progress toward dest for `stuckTime`.
         botAI->rpgInfo.stuckTs = getMSTime();
         botAI->rpgInfo.stuckAttempts = 0;
@@ -580,12 +585,13 @@ bool NewRpgBaseAction::IsQuestCapableDoing(Quest const* quest)
     if (highLevelQuest)
         return false;
 
-    // Elite quest and dungeon quest etc
-    if (quest->GetType() != 0)
+    auto const& control = botAI->rpgInfo.objectiveControl;
+    bool const cooperative = control.PartyReady(quest->GetQuestId(), quest->GetSuggestedPlayers());
+    // A verified ordinary party can attempt elite work. Raid/dungeon travel still requires its own adapter.
+    if (quest->GetType() != 0 && !(quest->GetType() == QUEST_TYPE_ELITE && cooperative))
         return false;
 
-    // now we only capable of doing solo quests
-    if (quest->GetSuggestedPlayers() >= 2)
+    if (quest->GetSuggestedPlayers() >= 2 && !cooperative)
         return false;
 
     return true;
@@ -611,7 +617,7 @@ bool NewRpgBaseAction::OrganizeQuestLog()
     for (uint16 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
     {
         uint32 questId = bot->GetQuestSlotQuestId(i);
-        if (!questId)
+        if (!questId || botAI->rpgInfo.objectiveControl.retained.contains(questId))
             continue;
 
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -642,7 +648,7 @@ bool NewRpgBaseAction::OrganizeQuestLog()
     for (uint16 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
     {
         uint32 questId = bot->GetQuestSlotQuestId(i);
-        if (!questId)
+        if (!questId || botAI->rpgInfo.objectiveControl.retained.contains(questId))
             continue;
 
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -673,7 +679,7 @@ bool NewRpgBaseAction::OrganizeQuestLog()
     for (uint16 i = 0; i < MAX_QUEST_LOG_SIZE; ++i)
     {
         uint32 questId = bot->GetQuestSlotQuestId(i);
-        if (!questId)
+        if (!questId || botAI->rpgInfo.objectiveControl.retained.contains(questId))
             continue;
 
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -697,7 +703,14 @@ bool NewRpgBaseAction::OrganizeQuestLog()
 bool NewRpgBaseAction::SearchQuestGiverAndAcceptOrReward()
 {
     OrganizeQuestLog();
-    if (ObjectGuid npcOrGo = ChooseNpcOrGameObjectToInteract(true, 80.0f))
+    ObjectGuid npcOrGo = ChooseNpcOrGameObjectToInteract(true, 80.0f);
+    auto& control = botAI->rpgInfo.objectiveControl;
+    if (control.token && control.place)
+    {
+        ++control.scans;
+        control.lastScanEmpty = npcOrGo.IsEmpty();
+    }
+    if (npcOrGo)
     {
         WorldObject* object = ObjectAccessor::GetWorldObject(*bot, npcOrGo);
         if (bot->CanInteractWithQuestGiver(object))
@@ -1157,7 +1170,8 @@ bool NewRpgBaseAction::RandomChangeStatus(std::vector<NewRpgStatus> candidateSta
             for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
             {
                 uint32 questId = bot->GetQuestSlotQuestId(slot);
-                if (botAI->lowPriorityQuest.find(questId) != botAI->lowPriorityQuest.end())
+                if (botAI->lowPriorityQuest.find(questId) != botAI->lowPriorityQuest.end()
+                    || botAI->rpgInfo.objectiveControl.deferred.contains(questId))
                     continue;
 
                 std::vector<POIInfo> poiInfo;
@@ -1249,7 +1263,8 @@ bool NewRpgBaseAction::CheckRpgStatusAvailable(NewRpgStatus status)
             for (uint8 slot = 0; slot < MAX_QUEST_LOG_SIZE; ++slot)
             {
                 uint32 questId = bot->GetQuestSlotQuestId(slot);
-                if (botAI->lowPriorityQuest.find(questId) != botAI->lowPriorityQuest.end())
+                if (botAI->lowPriorityQuest.find(questId) != botAI->lowPriorityQuest.end()
+                    || botAI->rpgInfo.objectiveControl.deferred.contains(questId))
                     continue;
 
                 std::vector<POIInfo> poiInfo;
