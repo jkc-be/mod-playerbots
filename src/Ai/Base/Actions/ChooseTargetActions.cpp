@@ -87,6 +87,8 @@ bool DropTargetAction::Execute(Event /*event*/)
 
 bool AttackAnythingAction::Execute(Event event)
 {
+    if (botAI->rpgInfo.objectiveControl.cooperationHold && !bot->IsInCombat())
+        return false; // A cached grind target must not start a pull while the party is gathering or supporting.
     bool result = AttackAction::Execute(event);
     if (result)
     {

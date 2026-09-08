@@ -28,6 +28,9 @@ GuidVector GroupMembersValue::Calculate()
 
 bool IsFollowingPartyValue::Calculate()
 {
+    auto const& control = botAI->rpgInfo.objectiveControl;
+    if (control.PartyReady(control.cooperativeQuest, 2))
+        return true;
     if (botAI->GetGroupLeader() == bot)
         return true;
 

@@ -27,6 +27,11 @@ bool AcceptInvitationAction::Execute(Event event)
     if (!inviter)
         return false;
 
+    // Bot-owned parties need objective agreement; a real human invitation can establish the control handoff.
+    if (botAI->rpgInfo.objectiveControl.plannerAttached && !botAI->HasGameClientMaster()
+        && (!inviter->GetSession() || inviter->GetSession()->IsBot()))
+        return false;
+
     if (!botAI->GetSecurity()->CheckLevelFor(PLAYERBOT_SECURITY_INVITE, false, inviter))
     {
         WorldPacket data(SMSG_GROUP_DECLINE, 10);

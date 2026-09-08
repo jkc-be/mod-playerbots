@@ -54,6 +54,8 @@ bool InviteToGroupAction::Invite(Player* inviter, Player* player)
 
 bool InviteNearbyToGroupAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.plannerAttached)
+        return false;
     GuidVector nearGuids = botAI->GetAiObjectContext()->GetValue<GuidVector>("nearest friendly players")->Get();
     for (auto& i : nearGuids)
     {
@@ -176,6 +178,8 @@ std::vector<Player*> InviteGuildToGroupAction::getGuildMembers()
 
 bool InviteGuildToGroupAction::Execute(Event /*event*/)
 {
+    if (botAI->rpgInfo.objectiveControl.plannerAttached)
+        return false;
     for (auto& member : getGuildMembers())
     {
         Player* player = member;

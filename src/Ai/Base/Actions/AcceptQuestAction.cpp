@@ -101,6 +101,9 @@ bool AcceptQuestAction::Execute(Event event)
 
 bool AcceptQuestShareAction::Execute(Event event)
 {
+    // Objective cooperation accepts only the specifically agreed shared quest through its normal handler.
+    if (botAI->rpgInfo.objectiveControl.plannerAttached && !botAI->HasGameClientMaster())
+        return false;
     Player* master = GetMaster();
     Player* bot = botAI->GetBot();
 

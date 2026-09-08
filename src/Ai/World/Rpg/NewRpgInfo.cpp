@@ -79,6 +79,9 @@ bool NewRpgInfo::CanChangeTo(NewRpgStatus)
 
 void NewRpgInfo::Reset()
 {
+    // Reset invalidates execution ownership; semantic intentions are reconciled by their owner.
+    objectiveControl.Release(objectiveControl.token);
+    objectiveControl.plannerAttached = false;
     data = Idle{};
     startT = getMSTime();
 }

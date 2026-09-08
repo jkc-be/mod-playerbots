@@ -11,6 +11,7 @@
 #include "ObjectGuid.h"
 #include "ObjectMgr.h"
 #include "QuestDef.h"
+#include "QuestObjectiveControl.h"
 #include "Strategy.h"
 #include "Timer.h"
 #include "TravelMgr.h"
@@ -51,6 +52,7 @@ struct NewRpgInfo
         int32 objectiveIdx{0};
         WorldPosition pos{};
         uint32 lastReachPOI{0};
+        uint32 creditAtCheckpoint{0};
     };
     // RPG_TRAVEL_FLIGHT
     struct TravelFlight
@@ -95,6 +97,7 @@ struct NewRpgInfo
         OutdoorPvP
     >;
     RpgData data;
+    QuestObjectiveControl objectiveControl;
 
     NewRpgStatus GetStatus();
     static NewRpgStatus StatusFromString(std::string const& name);
