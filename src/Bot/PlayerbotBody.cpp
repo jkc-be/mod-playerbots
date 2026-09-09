@@ -46,7 +46,7 @@ bool PlayerbotAI::DoBodyAction()
     {
         pause(BodyControl::Interrupt::BrainUnavailable);
         // Stop only our point movement. Follow, flight and other controllers own their own generators.
-        if (!body.Directed()
+        if ((!body.Directed() || body.skill == BodyControl::Skill::Activity)
             && bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == POINT_MOTION_TYPE)
         {
             bot->GetMotionMaster()->Clear();
@@ -70,8 +70,9 @@ bool PlayerbotAI::DoBodyAction()
     body.Resume();
     if (body.Directed())
     {
-        rpgInfo.bodyTravel.Pause(now);
-        return true; // Follow, paid preparation and rendezvous have their own Alles execution controller.
+        if (body.skill != BodyControl::Skill::Activity)
+            rpgInfo.bodyTravel.Pause(now);
+        return true; // Alles owns follow, preparation, rendezvous and purpose-specific activity execution.
     }
     auto const& control = rpgInfo.objectiveControl;
     if (body.skill == BodyControl::Skill::Idle)
@@ -151,6 +152,7 @@ bool PlayerbotAI::DoBodyAction()
         case BodyControl::Skill::Follow:
         case BodyControl::Skill::Repair:
         case BodyControl::Skill::Supplies:
+        case BodyControl::Skill::Activity:
         case BodyControl::Skill::Rendezvous:
             break;
     }

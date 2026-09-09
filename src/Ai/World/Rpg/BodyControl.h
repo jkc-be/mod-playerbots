@@ -13,7 +13,7 @@
 // A stale heartbeat holds the body instead of silently handing the character to another autonomous planner.
 struct BodyControl
 {
-    enum class Skill : uint8_t { Idle, Travel, Investigate, Quest, Follow, Repair, Supplies, Rendezvous };
+    enum class Skill : uint8_t { Idle, Travel, Investigate, Quest, Follow, Repair, Supplies, Rendezvous, Activity };
     enum class State : uint8_t { Idle, Running, Interrupted, Blocked, Arrived };
     enum class Interrupt : uint8_t { None, Combat, Recovery, Maintenance, Human, BrainUnavailable };
 
@@ -26,7 +26,7 @@ struct BodyControl
     Interrupt interruption = Interrupt::None;
 
     bool Attached() const { return generation && attachment; }
-    bool Directed() const { return skill >= Skill::Follow && skill <= Skill::Rendezvous; }
+    bool Directed() const { return skill >= Skill::Follow && skill <= Skill::Activity; }
     bool Fresh(uint32_t now) const { return Attached() && uint32_t(now - heartbeat) <= 5000; }
     bool MayStartQuestCombat(uint64_t token, bool attempting, uint32_t now) const
     {
@@ -49,7 +49,7 @@ struct BodyControl
     bool Issue(uint64_t ownerGeneration, uint64_t ownerAttachment, uint64_t token, Skill next, uint32_t now)
     {
         if (!Attached() || generation != ownerGeneration || attachment != ownerAttachment
-            || next > Skill::Rendezvous || (next != Skill::Idle && !token))
+            || next > Skill::Activity || (next != Skill::Idle && !token))
             return false;
         if (objective != token || skill != next)
         {
@@ -96,6 +96,7 @@ struct BodyControl
             case Skill::Repair: return "repair";
             case Skill::Supplies: return "supplies";
             case Skill::Rendezvous: return "rendezvous";
+            case Skill::Activity: return "activity";
         }
         return "unknown";
     }
