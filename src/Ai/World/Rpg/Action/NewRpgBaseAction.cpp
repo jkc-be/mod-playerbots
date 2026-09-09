@@ -245,7 +245,24 @@ bool NewRpgBaseAction::MoveWorldObjectTo(ObjectGuid guid, float distance)
         y = object->GetPositionY();
         z = object->GetPositionZ();
     }
+    if (!IsInSearchArea(x, y, z))
+        return false;
+    if (botAI->rpgInfo.body.Attached() && botAI->rpgInfo.objectiveControl.place)
+    {
+        PathGenerator path(bot);
+        if (!path.CalculatePath(x, y, z)
+            || std::any_of(path.GetPath().begin(), path.GetPath().end(), [this](auto const& point)
+                { return !IsInSearchArea(point.x, point.y, point.z); }))
+            return false;
+    }
     return MoveTo(mapId, x, y, z, false, false, false, true);
+}
+
+bool NewRpgBaseAction::IsInSearchArea(float x, float y, float z) const
+{
+    auto const& info = botAI->rpgInfo;
+    return !info.body.Attached() || !info.objectiveControl.place
+        || bot->GetMap()->GetAreaId(bot->GetPhaseMask(), x, y, z) == info.objectiveControl.place;
 }
 
 bool NewRpgBaseAction::MoveRandomNear(float moveStep, MovementPriority priority, WorldObject*)
@@ -283,6 +300,11 @@ bool NewRpgBaseAction::MoveRandomNear(float moveStep, MovementPriority priority,
             continue;
 
         if (map->IsInWater(bot->GetPhaseMask(), dx, dy, dz, bot->GetCollisionHeight()))
+            continue;
+
+        if (!IsInSearchArea(dx, dy, dz)
+            || std::any_of(path.GetPath().begin(), path.GetPath().end(), [this](auto const& point)
+                { return !IsInSearchArea(point.x, point.y, point.z); }))
             continue;
 
         bool moved = MoveTo(bot->GetMapId(), dx, dy, dz, false, false, false, true, priority);
@@ -735,6 +757,18 @@ ObjectGuid NewRpgBaseAction::ChooseNpcOrGameObjectToInteract(bool questgiverOnly
 {
     GuidVector possibleTargets = AI_VALUE(GuidVector, "possible new rpg targets");
     GuidVector possibleGameObjects = AI_VALUE(GuidVector, "possible new rpg game objects");
+
+    // A nearby NPC across the border must not pull a managed local search out of its intended area.
+    auto outside = [this](ObjectGuid guid)
+    {
+        auto const* object = ObjectAccessor::GetWorldObject(*bot, guid);
+        return !object || !IsInSearchArea(object->GetPositionX(), object->GetPositionY(), object->GetPositionZ());
+    };
+    if (botAI->rpgInfo.body.Attached() && botAI->rpgInfo.objectiveControl.place)
+    {
+        std::erase_if(possibleTargets, outside);
+        std::erase_if(possibleGameObjects, outside);
+    }
 
     if (possibleTargets.empty() && possibleGameObjects.empty())
         return ObjectGuid();

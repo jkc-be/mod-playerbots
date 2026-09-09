@@ -108,6 +108,7 @@ public:
         _endpoints.push_back(point);
     }
     uint32_t failures = 0;
+    uint32_t recoveries = 0;
     uint32_t nextAttempt = 0;
 
 private:

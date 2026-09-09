@@ -5,6 +5,7 @@
 
 #include "NewRpgBaseAction.h"
 #include "MotionMaster.h"
+#include "Observatory.h"
 #include "PathGenerator.h"
 #include "Playerbots.h"
 
@@ -78,6 +79,24 @@ bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& dest)
     if (IsWaitingForLastMove(MovementPriority::MOVEMENT_NORMAL))
         return true;
 
+    auto commit = [&](PathGenerator const& path)
+    {
+        auto const& endpoint = path.GetActualEndPosition();
+        BodyTravel::Point const end{endpoint.x, endpoint.y, endpoint.z};
+        if (travel.Tried(end))
+            return false;
+        std::vector<BodyTravel::Point> points;
+        for (auto const& point : path.GetPath())
+            points.push_back({point.x, point.y, point.z});
+        BodyTravel candidate = travel;
+        if (!candidate.Commit(std::move(points), now)
+            || !MoveTo(bot->GetMapId(), end.x, end.y, end.z, false, false, false, true))
+            return false;
+        candidate.Remember(end);
+        travel = std::move(candidate);
+        return true;
+    };
+
     uint32_t const permitted = PATHFIND_NORMAL | PATHFIND_INCOMPLETE;
     // Smooth paths have a fixed point budget. Ask for the corridor's corners first, then walk a bounded
     // leg along that corridor; a far destination must not become a rejected shortcut at the smooth-path cap.
@@ -104,22 +123,47 @@ bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& dest)
     }
     PathGenerator path(bot);
     bool const calculated = routed && path.CalculatePath(leg.x, leg.y, leg.z);
-    auto const& endpoint = path.GetActualEndPosition();
-    BodyTravel::Point const end{endpoint.x, endpoint.y, endpoint.z};
-    if (calculated && !(path.GetPathType() & ~permitted) && !travel.Tried(end))
+    if (calculated && !(path.GetPathType() & ~permitted) && commit(path))
+        return true;
+
+    // Retry from a nearby reachable point before giving the intention back to the brain. These are
+    // ordinary short paths, never teleports or forced destinations. Remember endpoints across probes
+    // and bound the number of probes so recovery cannot become another wandering loop.
+    if (travel.recoveries < 2)
     {
-        std::vector<BodyTravel::Point> points;
-        for (auto const& point : path.GetPath())
-            points.push_back({point.x, point.y, point.z});
-        BodyTravel candidate = travel;
-        if (candidate.Commit(std::move(points), now)
-            && MoveTo(bot->GetMapId(), end.x, end.y, end.z, false, false, false, true))
+        float const facing = bot->GetAngle(&dest);
+        for (unsigned probe = 0; probe < 8; ++probe)
         {
-            candidate.Remember(end);
-            travel = std::move(candidate);
-            return true;
+            float const angle = facing + probe * float(M_PI) / 4.0f;
+            float const x = position.x + 10.0f * std::cos(angle);
+            float const y = position.y + 10.0f * std::sin(angle);
+            float z = position.z;
+            bot->UpdateAllowedPositionZ(x, y, z);
+            PathGenerator recovery(bot);
+            if (!recovery.CalculatePath(x, y, z)
+                || (recovery.GetPathType() & ~(permitted | PATHFIND_FARFROMPOLY_START)))
+                continue;
+            auto const& points = recovery.GetPath();
+            bool valid = points.size() >= 2;
+            for (std::size_t i = 1; valid && i < points.size(); ++i)
+                valid = recovery.IsWalkableClimb(points[i - 1].x, points[i - 1].y, points[i - 1].z,
+                    points[i].x, points[i].y, points[i].z)
+                    && bot->GetMap()->isInLineOfSight(points[i - 1].x, points[i - 1].y,
+                        points[i - 1].z + bot->GetCollisionHeight(), points[i].x, points[i].y,
+                        points[i].z + bot->GetCollisionHeight(), bot->GetPhaseMask(),
+                        LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing);
+            if (valid && commit(recovery))
+            {
+                ++travel.recoveries;
+                Observatory::Event(bot, "body_navigation", info.body.objective, "local_recovery");
+                return true;
+            }
         }
     }
+    if (!travel.failures)
+        LOG_INFO("playerbots", "Body route failed for {} at ({}, {}, {}) toward ({}, {}, {}): corridor {}, path {}",
+            bot->GetName(), position.x, position.y, position.z, dest.GetPositionX(), dest.GetPositionY(),
+            dest.GetPositionZ(), uint32(corridor.GetPathType()), uint32(path.GetPathType()));
     ++travel.failures;
     if (travel.failures >= 3)
         info.objectiveControl.Fail(QuestObjectiveControl::Failure::Navigation);

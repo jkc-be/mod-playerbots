@@ -102,9 +102,9 @@ bool PlayerbotAI::DoBodyAction()
     switch (body.skill)
     {
         case BodyControl::Skill::Travel:
-            if (control.place && bot->GetAreaId() == control.place)
-                body.state = BodyControl::State::Arrived;
             bodyEngine->ExecuteAction("new rpg go camp");
+            if (control.place && control.phase == QuestObjectiveControl::Phase::Attempting)
+                body.state = BodyControl::State::Arrived;
             break;
         case BodyControl::Skill::Investigate:
             bodyEngine->ExecuteAction("new rpg wander npc");

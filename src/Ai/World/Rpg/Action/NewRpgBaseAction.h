@@ -36,6 +36,7 @@ protected:
     /* MOVEMENT RELATED */
     bool MoveFarTo(WorldPosition dest);
     bool MoveBodyTo(WorldPosition const& dest);
+    bool IsInSearchArea(float x, float y, float z) const;
     bool MoveWorldObjectTo(ObjectGuid guid, float distance = INTERACTION_DISTANCE);
     bool MoveRandomNear(float moveStep = 50.0f, MovementPriority priority = MovementPriority::MOVEMENT_NORMAL, WorldObject* center = nullptr);
     bool ForceToWait(uint32 duration, MovementPriority priority = MovementPriority::MOVEMENT_NORMAL);

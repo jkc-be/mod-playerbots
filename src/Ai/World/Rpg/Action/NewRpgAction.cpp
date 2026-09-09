@@ -47,7 +47,8 @@ WorldPosition BodyQuestAnchor(Player& bot, Quest const& quest, int32 objective, 
         ? quest.RequiredNpcOrGo[objective] : 0;
     bool const items = objective >= QUEST_OBJECTIVES_COUNT
         && objective < QUEST_OBJECTIVES_COUNT + QUEST_ITEM_OBJECTIVES_COUNT;
-    if (!entry && !items)
+    bool const returning = objective == -1;
+    if (!entry && !items && !returning)
         return marker;
     WorldPosition result = marker;
     float nearest = 1500.0f;
@@ -70,6 +71,12 @@ WorldPosition BodyQuestAnchor(Player& bot, Quest const& quest, int32 objective, 
     {
         if (!candidate)
             return false;
+        if (returning)
+        {
+            auto const [first, last] = sObjectMgr->GetCreatureQuestInvolvedRelationBounds(candidate);
+            return std::any_of(first, last,
+                [&](auto const& relation) { return relation.second == quest.GetQuestId(); });
+        }
         if (entry > 0 && candidate == uint32(entry))
             return true;
         auto const* definition = items ? sObjectMgr->GetCreatureTemplate(candidate) : nullptr;
@@ -83,7 +90,10 @@ WorldPosition BodyQuestAnchor(Player& bot, Quest const& quest, int32 objective, 
         if (nearby(spawn))
         {
             auto const* definition = items ? sObjectMgr->GetGameObjectTemplate(spawn.id) : nullptr;
-            if ((entry < 0 && spawn.id == uint32(-entry)) || (definition
+            auto const [first, last] = sObjectMgr->GetGOQuestInvolvedRelationBounds(spawn.id);
+            bool const questEnder = returning && std::any_of(first, last,
+                [&](auto const& relation) { return relation.second == quest.GetQuestId(); });
+            if (questEnder || (entry < 0 && spawn.id == uint32(-entry)) || (definition
                 && LootTemplates_Gameobject.HaveQuestLootForPlayer(definition->GetLootId(), &bot)))
                 consider(spawn);
         }
@@ -420,7 +430,9 @@ bool NewRpgGoCampAction::Execute(Event /*event*/)
     if (control.token && control.place)
     {
         control.phase = QuestObjectiveControl::Phase::Traveling;
-        if (bot->GetAreaId() == control.place)
+        auto const* destination = std::get_if<NewRpgInfo::GoCamp>(&botAI->rpgInfo.data);
+        if (bot->GetAreaId() == control.place && (!botAI->rpgInfo.body.Attached()
+            || (destination && bot->GetExactDist(destination->pos) < 10.0f)))
         {
             botAI->rpgInfo.ChangeToWanderNpc();
             control.phase = QuestObjectiveControl::Phase::Attempting;
@@ -487,6 +499,11 @@ bool NewRpgWanderNpcAction::Execute(Event /*event*/)
     }
 
     WorldObject* object = ObjectAccessor::GetWorldObject(*bot, data.npcOrGo);
+    if (object && !IsInSearchArea(object->GetPositionX(), object->GetPositionY(), object->GetPositionZ()))
+    {
+        data.npcOrGo.Clear();
+        return MoveRandomNear(25.0f);
+    }
     if (object && IsWithinInteractionDist(object))
     {
         if (!data.lastReach)
@@ -731,7 +748,7 @@ bool NewRpgDoQuestAction::DoCompletedQuest(NewRpgInfo::DoQuest& data)
 
         WorldPosition pos(bot->GetMapId(), dx, dy, dz);
         data.lastReachPOI = 0;
-        data.pos = pos;
+        data.pos = botAI->rpgInfo.body.Attached() ? BodyQuestAnchor(*bot, *quest, -1, pos) : pos;
         data.objectiveIdx = -1;
     }
 
