@@ -9,11 +9,16 @@
 #include "PathGenerator.h"
 #include "Playerbots.h"
 
-bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& dest)
+bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& requested)
 {
     auto& info = botAI->rpgInfo;
     auto& travel = info.bodyTravel;
     auto const now = getMSTime();
+    auto const waypoint = info.bodyRoute.Next(info.body.generation, info.body.attachment, info.body.objective,
+        requested.GetMapId(), {requested.GetPositionX(), requested.GetPositionY(), requested.GetPositionZ()},
+        {bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()});
+    WorldPosition const dest = waypoint
+        ? WorldPosition(requested.GetMapId(), waypoint->x, waypoint->y, waypoint->z, 0) : requested;
     if (dest == WorldPosition() || dest.GetMapId() != bot->GetMapId())
     {
         info.objectiveControl.Fail(QuestObjectiveControl::Failure::MissingLocation);
@@ -22,7 +27,15 @@ bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& dest)
     if (dest != info.moveFarPos)
     {
         info.SetMoveFarTo(dest);
+        auto const failures = travel.failures;
+        auto const recoveries = travel.recoveries;
         travel = {};
+        if (waypoint)
+        {
+            // Reaching an intermediate policy waypoint cannot restart the journey's failure budget.
+            travel.failures = failures;
+            travel.recoveries = recoveries;
+        }
     }
     if (bot->IsInCombat() || !bot->IsAlive() || bot->IsBeingTeleported() || bot->IsInFlight()
         || bot->IsSitState() || bot->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT))

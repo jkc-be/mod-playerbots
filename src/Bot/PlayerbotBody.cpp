@@ -30,6 +30,7 @@ bool PlayerbotAI::DoBodyAction()
     {
         body = {};
         rpgInfo.bodyTravel = {};
+        rpgInfo.bodyRoute = {};
         return false; // Do not stop or overwrite a human's movement at handoff.
     }
     if (!bot->IsAlive() || currentState == BOT_STATE_DEAD)

@@ -102,6 +102,7 @@ struct NewRpgInfo
     QuestObjectiveControl objectiveControl;
     BodyControl body;
     BodyTravel bodyTravel;
+    BodyRoutePolicy bodyRoute;
 
     NewRpgStatus GetStatus();
     static NewRpgStatus StatusFromString(std::string const& name);

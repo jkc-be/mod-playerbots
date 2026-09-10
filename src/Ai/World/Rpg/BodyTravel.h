@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <utility>
 #include <vector>
+#include <optional>
 
 // Progress along a committed path, independent of distance to the final destination. A road can lead away
 // from that destination. All points are owned values, and elapsed combat/offline time is not navigation work.
@@ -120,6 +121,65 @@ private:
     uint32_t _stalledMs = 0;
     uint32_t _advances = 0;
     bool _paused = true;
+};
+
+// Bounded route policy from the owning brain. The tactical executor still supplies the actual goal;
+// a policy for another incarnation, objective, map or destination cannot redirect that executor.
+class BodyRoutePolicy
+{
+public:
+    using Point = BodyTravel::Point;
+
+    bool Install(uint64_t generation, uint64_t attachment, uint64_t objective, uint64_t revision,
+        uint32_t map, Point goal, std::vector<Point> stops)
+    {
+        if (!generation || !attachment || !objective || !revision || !goal.Valid()
+            || stops.empty() || stops.size() > 3 || stops.back().Distance(goal) >= 5
+            || std::any_of(stops.begin(), stops.end(), [](Point point) { return !point.Valid(); })
+            || (_generation == generation && _attachment == attachment && _objective == objective
+                && revision < _revision))
+            return false;
+        for (std::size_t i = 0; i < stops.size(); ++i)
+            for (std::size_t j = i + 1; j < stops.size(); ++j)
+                if (stops[i].Distance(stops[j]) < 5)
+                    return false;
+        _generation = generation;
+        _attachment = attachment;
+        _objective = objective;
+        _revision = revision;
+        _map = map;
+        _goal = goal;
+        _stops = std::move(stops);
+        _cursor = 0;
+        return true;
+    }
+
+    bool Matches(uint64_t generation, uint64_t attachment, uint64_t objective, uint32_t map, Point goal) const
+    {
+        return !_stops.empty() && _generation == generation && _attachment == attachment
+            && _objective == objective && _map == map && goal.Valid() && _goal.Distance(goal) < 5;
+    }
+
+    std::optional<Point> Next(uint64_t generation, uint64_t attachment, uint64_t objective,
+        uint32_t map, Point goal, Point position)
+    {
+        if (!Matches(generation, attachment, objective, map, goal) || !position.Valid())
+            return std::nullopt;
+        while (_cursor + 1 < _stops.size() && position.Distance(_stops[_cursor]) < 5)
+            ++_cursor;
+        return _stops[_cursor];
+    }
+
+    std::size_t Stops() const { return _stops.size(); }
+    std::size_t Cursor() const { return _cursor; }
+    uint64_t Revision() const { return _revision; }
+
+private:
+    uint64_t _generation = 0, _attachment = 0, _objective = 0, _revision = 0;
+    uint32_t _map = 0;
+    Point _goal;
+    std::vector<Point> _stops;
+    std::size_t _cursor = 0;
 };
 
 #endif
