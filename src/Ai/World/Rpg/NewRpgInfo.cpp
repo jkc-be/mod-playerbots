@@ -84,6 +84,7 @@ void NewRpgInfo::Reset()
     objectiveControl.plannerAttached = false;
     body = {};
     bodyTravel = {};
+    bodyRoute = {};
     data = Idle{};
     startT = getMSTime();
 }

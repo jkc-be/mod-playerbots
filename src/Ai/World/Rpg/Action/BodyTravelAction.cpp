@@ -27,15 +27,12 @@ bool NewRpgBaseAction::MoveBodyTo(WorldPosition const& requested)
     if (dest != info.moveFarPos)
     {
         info.SetMoveFarTo(dest);
-        auto const failures = travel.failures;
-        auto const recoveries = travel.recoveries;
-        travel = {};
-        if (waypoint)
-        {
-            // Reaching an intermediate policy waypoint cannot restart the journey's failure budget.
-            travel.failures = failures;
-            travel.recoveries = recoveries;
-        }
+        // Policy and activity waypoints belong to the same owned journey. Retain its retry and loop history.
+        if (waypoint || (info.body.objective && (info.body.skill == BodyControl::Skill::Activity
+            || info.body.skill == BodyControl::Skill::Travel)))
+            travel.ClearPath();
+        else
+            travel = {};
     }
     if (bot->IsInCombat() || !bot->IsAlive() || bot->IsBeingTeleported() || bot->IsInFlight()
         || bot->IsSitState() || bot->HasUnitState(UNIT_STATE_STUNNED | UNIT_STATE_ROOT))
